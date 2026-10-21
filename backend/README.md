@@ -2,6 +2,17 @@
 
 Fondasi lokal pertama: 14 model SQLAlchemy + migrasi PostgreSQL/RLS, domain kapasitas, Google OIDC/sesi/CSRF, profil, health/config status, dan adapter Calendar untuk risk spike. **Belum CRUD agenda/catatan atau worker reminder produksi.**
 
+## FastAPI Cloud
+
+- Atur **Application Directory** ke `backend` pada app yang sudah terhubung ke GitHub.
+- Dependency `fastapi[standard]` menyediakan CLI yang dipakai proses startup Cloud; memasang `fastapi` saja tidak cukup.
+- `pyproject.toml` menetapkan entrypoint `myschedule.main:app`; Python dipin ke seri 3.13, sama dengan CI.
+- Setelah dependency berubah, gunakan **build baru dari commit terbaru**. Redeploy image lama tetap membawa dependency lama dan dapat mengulang error yang sama.
+- Uji `/health/live` untuk startup proses. `/health/ready` baru 200 setelah koneksi, role database dan migrasi siap; booting sukses tidak membuktikan login Google/database sudah berfungsi.
+- Tes deployment lokal/CI menjalankan **`python -m fastapi run`** sungguhan, bukan hanya mengimpor app melalui test client.
+
+Root `/` belum menyajikan bundle React dalam backend ini; deployment backend bukan deployment full-stack otomatis. Sesi OAuth masih single-process seperti batas yang dijelaskan di bawah.
+
 ## Instalasi
 
 Gunakan Python 3.13; jalankan dari `backend/`:
