@@ -1,0 +1,46 @@
+
+/docs
+
+# Local configuration and secrets (examples are safe to commit).
+.env
+.env.*
+!.env.example
+.local/
+*.pem
+*.key
+*.p12
+*.pfx
+client_secret_*.json
+credentials.json
+service-account*.json
+token.json
+tokens.json
+
+# Local data, backups, and logs are not source code.
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.log
+.pgdata/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Frontend / browser tests
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store

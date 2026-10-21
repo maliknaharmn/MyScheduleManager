@@ -1,30 +1,54 @@
 # MySchedule Manager
 
-**Status:** paket pra-build dan default **disetujui**; lanjut fondasi lokal dan risk spike. Aplikasi belum di-scaffold pada pencatatan approval; integrasi/tes/pilot belum terbukti.
+**Status:** fondasi React/FastAPI/PostgreSQL berjalan dan dites lokal. **Belum MVP lengkap**—CRUD agenda/catatan dan pengingat Google belum aktif.
+
+Repository ini public. Secret, `.env`, data lokal, dan direktori perencanaan pribadi `docs/` tidak diikutkan dalam Git. Panduan yang tersedia setelah clone ada di [backend README](backend/README.md) dan [frontend README](frontend/README.md).
 
 MySchedule Manager membantu satu pengguna melihat kapasitas jadwal pribadi, mencatat komitmen cepat, serta memantau catatan bertarget dengan checklist dan prasyarat terhubung. Produk ini adalah **personal schedule overview dan decision-support tool**, bukan pengganti seluruh Google Calendar. Keputusan menerima tawaran tetap dibuat pengguna di luar aplikasi.
 
-MVP adalah web app responsif/PWA untuk iPhone Home Screen dan browser Mac, **Google login saja**, dengan data yang tersinkron otomatis. Kapasitas berdasarkan jam: Free 0, Light >0–<6, Medium 6–10, Busy >10; Tentative ikut dihitung. Pengingat catatan harian memakai integrasi Google Calendar terbatas dan berhenti otomatis saat selesai; agenda dapat diekspor `.ics` satu arah. Input bahasa alami ditunda. Nama folder kerja `MyCalender Manager` dipertahankan; nama produk **MySchedule Manager**.
+Target MVP adalah web app responsif/PWA untuk iPhone Home Screen dan browser Mac, **Google login saja**, dengan data yang tersinkron otomatis. Kapasitas berdasarkan jam: Free 0, Light >0–<6, Medium 6–10, Busy >10; Tentative ikut dihitung. Pengingat catatan harian direncanakan memakai integrasi Google Calendar terbatas dan berhenti otomatis saat selesai; ekspor agenda `.ics` satu arah menyusul. Input bahasa alami ditunda. Nama folder kerja `MyCalender Manager` dipertahankan; nama produk **MySchedule Manager**.
 
-Pipeline kini: **fondasi lokal + risk spike → implementasi → QA/pilot**. PRD, stack baseline, ERD/API, wireframe dan U01–U10 diterima; sumber [Approval](docs/product/APPROVAL.md). Provider hosting, credentials, biaya dan deployment bukan persetujuan tersirat.
+Pipeline kini: **fondasi lokal + risk spike → implementasi → QA/pilot**. Baseline produk/desain diterima; catatan persetujuan tetap lokal di `docs/product/APPROVAL.md`. Provider hosting, credentials, biaya dan deployment belum ditetapkan oleh persetujuan desain.
 
 ## Mulai dari sini
 
+Untuk instalasi baru, ikuti [backend README](backend/README.md) terlebih dahulu untuk virtualenv, PostgreSQL dan migrasi, lalu jalankan `npm ci` dari `frontend/`. Setelah itu buka dua terminal:
+
+**Terminal di `backend/`:**
+
+```sh
+.venv/bin/python -m uvicorn myschedule.main:app --reload --host 127.0.0.1 --port 8000 --no-access-log
+```
+
+**Terminal di `frontend/`:**
+
+```sh
+npm run dev
+```
+
+Buka **http://localhost:5173**. Isi konfigurasi Google di `backend/.env` secara lokal; lihat bagian Google OAuth pada [backend README](backend/README.md). Jangan commit secret atau menaruhnya di frontend.
+
+Jika port 8000 dipakai aplikasi lain, gunakan port 8002 untuk perintah backend dan jalankan frontend dengan `API_PROXY_TARGET=http://127.0.0.1:8002 npm run dev`. Origin browser/callback Google tetap `http://localhost:5173`.
+
+## Dokumentasi perencanaan lokal
+
+Daftar berikut hanya tersedia pada workspace perencanaan; direktori `docs/` sengaja tidak dipublikasikan. Path ditampilkan sebagai referensi lokal, bukan tautan yang tersedia setelah clone.
+
 | Dokumen                                            | Isi                                                          |
 | -------------------------------------------------- | ------------------------------------------------------------ |
-| [Discovery](docs/product/DISCOVERY.md)             | Dasar jawaban pengguna dan riwayat keputusan                 |
-| [PRD](docs/product/PRD.md)                         | Masalah, ruang lingkup MVP, kebutuhan, dan keputusan terbuka |
-| [UX Flow](docs/design/UX_FLOW.md)                  | Navigasi dan alur keputusan serta penambahan jadwal          |
-| [Design System](docs/design/DESIGN_SYSTEM.md)      | Prinsip visual, komponen, dan aksesibilitas                  |
-| [Technical Plan](docs/technical/TECHNICAL_PLAN.md) | Model data, batas arsitektur, serta urutan implementasi      |
-| [ERD](docs/technical/ERD.md)                      | Usulan tabel, relasi, dan constraint data                   |
-| [API Contract](docs/technical/API_CONTRACT.md)    | Endpoint React–FastAPI, payload, error, dan status pengingat |
-| [Wireframes](docs/design/WIREFRAMES.md)           | Seluruh layar, form, state, dialog dan responsif             |
-| [Build Handoff](docs/technical/BUILD_HANDOFF.md)  | Mulai review seluruh paket dan keputusan sebelum build     |
-| [Backlog](docs/technical/IMPLEMENTATION_BACKLOG.md) | 30 tiket implementasi beserta dependency dan acceptance   |
-| [QA Plan](docs/technical/QA_PLAN.md)              | 38 test case rencana dan traceability 22 acceptance          |
-| [Fitur MVP](docs/features/README.md)               | Spesifikasi ringkas per fitur                                |
-| [Roadmap](docs/product/ROADMAP.md)                 | Ide setelah MVP; bukan cakupan build saat ini                |
+| `docs/product/DISCOVERY.md` | Dasar jawaban pengguna dan riwayat keputusan |
+| `docs/product/PRD.md` | Masalah, ruang lingkup MVP, kebutuhan dan acceptance |
+| `docs/design/UX_FLOW.md` | Navigasi dan alur pengguna |
+| `docs/design/DESIGN_SYSTEM.md` | Komponen, visual dan aksesibilitas |
+| `docs/technical/TECHNICAL_PLAN.md` | Arsitektur dan urutan implementasi |
+| `docs/technical/ERD.md` | Tabel, relasi dan constraint |
+| `docs/technical/API_CONTRACT.md` | Kontrak API MVP |
+| `docs/design/WIREFRAMES.md` | Layar, form dan state |
+| `docs/technical/BUILD_HANDOFF.md` | Keputusan dan gate implementasi |
+| `docs/technical/IMPLEMENTATION_BACKLOG.md` | Dependency dan acceptance per tiket |
+| `docs/technical/QA_PLAN.md` | Rencana tes dan traceability |
+| `docs/features/README.md` | Spesifikasi ringkas fitur |
+| `docs/product/ROADMAP.md` | Ide setelah MVP |
 
 ## Struktur
 
@@ -36,6 +60,6 @@ docs/
   features/     satu folder per fitur MVP
 ```
 
-Stack baseline disetujui: **React/Vite/TypeScript + Python/FastAPI + SQLAlchemy async/asyncpg**, PostgreSQL/Alembic, Tailwind/shadcn, Google OAuth via Authlib, Calendar API, pytest/Playwright. Detail di Technical Plan; dependency belum diinstal dan provider hosting belum dipilih. Kode runtime terpisah dari `docs/`: `backend/` dan `frontend/`.
+Stack berjalan: **React/Vite/TypeScript + Python/FastAPI + SQLAlchemy async/asyncpg**, PostgreSQL/Alembic, Tailwind, Google OAuth via Authlib dan tooling tes. Dependency dipin melalui lockfiles. Adapter Calendar baru diuji simulasi; provider hosting produksi belum dipilih. Kode runtime terpisah dari `docs/`: `backend/` dan `frontend/`.
 # MyCalendarManagement
 # MySchedule Manager
