@@ -13,6 +13,19 @@ from myschedule.models import CalendarCredential, Profile, Schedule, Tag, Target
 pytestmark = pytest.mark.database
 
 
+async def test_readiness_checks_auth_not_only_resource_database(db_settings):
+    settings = db_settings.model_copy(update={"auth_database_url": db_settings.database_url})
+    app = create_app(settings)
+    try:
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            assert (await client.get("/health/live")).status_code == 200
+            assert (await client.get("/health/ready")).status_code == 503
+    finally:
+        await app.state.database.close()
+
+
 async def test_migration_and_non_owner_runtime_role(account):
     async with account.database.session(account.user_id) as session:
         role = (

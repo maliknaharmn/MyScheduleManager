@@ -1,13 +1,21 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BACKEND_DIRECTORY = Path(__file__).resolve().parents[2]
+PROJECT_DIRECTORY = BACKEND_DIRECTORY.parent
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
+    model_config = SettingsConfigDict(
+        env_file=(BACKEND_DIRECTORY / ".env", PROJECT_DIRECTORY / ".local/neon-runtime.env"),
+        extra="ignore",
+        case_sensitive=False,
+    )
 
     app_env: Literal["development", "test", "production"] = "development"
     app_origin: str = "http://localhost:5173"

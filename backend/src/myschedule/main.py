@@ -1,4 +1,3 @@
-import asyncio
 import secrets
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -7,7 +6,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse, Response
-from sqlalchemy import text, update
+from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException
 
@@ -102,20 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return envelope(request, {"status": "ok"})
 
     async def database_ready() -> bool:
-        try:
-            database = app.state.database
-            async with asyncio.timeout(3):
-                async with database.session() as session:
-                    revision = await session.scalar(text("SELECT version_num FROM alembic_version"))
-                    safe_role = await session.scalar(
-                        text(
-                            "SELECT NOT (rolsuper OR rolbypassrls) FROM pg_roles "
-                            "WHERE rolname = current_user"
-                        )
-                    )
-            return revision == "0001" and bool(safe_role)
-        except (SQLAlchemyError, RuntimeError, TimeoutError, OSError):
-            return False
+        return await app.state.database.ready()
 
     @app.get(
         "/health/ready",
