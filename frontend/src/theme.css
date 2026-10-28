@@ -25,6 +25,22 @@
 .app-dialog h2 { font-size: 24px; margin-bottom: 14px; }
 .app-dialog > p { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
 .app-dialog .app-alert { margin-top: 16px; }
+.app-week-switch .app-week-today { width: auto; min-width: 58px; padding: 0 10px; font-size: 13px; color: var(--app-link); }
+.app-home .app-section-heading { flex-wrap: wrap; }
+.app-home .app-week-switch { flex-wrap: wrap; row-gap: 6px; }
+.app-home .app-week-switch > span { margin-right: 4px; }
+.app-day-dialog h2 { font-size: 22px; line-height: 1.3; }
+.app-day-dialog-links { display: grid; gap: 12px; margin-top: 20px; }
+.app-day-dialog-links a { min-height: 44px; justify-content: center; }
+.app-day-dialog-close { min-height: 44px; margin-top: 20px; }
+.app-day-date[aria-current=date] strong { color: var(--app-link); }
+@media (max-width: 760px) {
+  .app-home .app-section-heading { align-items: flex-start; }
+  .app-home .app-week-switch { width: 100%; }
+  .app-home .app-week-switch > span { flex: 1; font-size: 12px; }
+  .app-home .app-week-switch button { min-height: 44px; min-width: 44px; }
+  .app-home .app-week-switch .app-week-today { min-width: 64px; font-size: 13px; }
+}
 .app-page-heading h1 { overflow-wrap: anywhere; }
 
 :root[data-theme=dark] { color-scheme: dark; color: #f2f2f2; background: #101010; --background: #101010; --surface: #181818; --muted: #bcbcbc; --border: #363636; --primary: #99c2ff; }

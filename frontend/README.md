@@ -2,7 +2,7 @@
 
 UI akun responsif mengikuti referensi layar Home: kartu kapasitas, catatan Important, agenda mingguan kronologis, dan navigasi mobile/desktop. Pengguna dapat menambah, melihat, mengedit dan menghapus agenda maupun catatan, mengelola checklist, menyelesaikan dan membuka kembali catatan. Home menyapa nama lengkap `name` yang diterima dari Google login, bukan nama contoh atau bagian alamat email. Data berasal dari API akun; tidak ada seed/demo data yang dianggap milik pengguna. Pengingat Google Calendar dan ekspor `.ics` belum aktif.
 
-Identitas ikon baru dibuat dengan imagegen dari palet UI biru kobalt/lime. Master berada di `assets-source/icon/`; `public/icons/` memuat favicon 16/32, ikon PWA 192/512, dan ikon Apple 180. `public/manifest.webmanifest` serta `index.html` merujuk aset tersebut. Ini menyiapkan ikon dan metadata instalasi; dukungan offline/service worker belum ditambahkan.
+Identitas ikon **My** berbentuk kalender kertas dengan gradasi biru dipilih pengguna. Master, versi maskable, dan versi favicon ada di `assets-source/icon/`; `public/icons/` memuat favicon 16/32, ikon PWA 192/512 (standar dan maskable), serta ikon Apple 180. `public/manifest.webmanifest`, `index.html`, dan logo aplikasi merujuk aset baru dengan versi URL untuk menyegarkan cache. Ini menyiapkan ikon dan metadata instalasi; dukungan offline/service worker belum ditambahkan.
 
 Gunakan Node ≥22.12.0. Jalankan dari `frontend/`:
 
@@ -54,3 +54,20 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 - Centang disimpan otomatis setelah konfirmasi server. Perubahan form menunggu **Simpan perubahan**. Semua checklist dicentang tidak otomatis menyelesaikan catatan; catatan tanpa checklist bukan 100%. Checklist tersisa memerlukan konfirmasi penyelesaian; **Buka kembali** mempertahankan centang. Catatan selesai harus dibuka sebelum diedit.
 - Hapus memerlukan dialog konfirmasi, tidak menghilangkan data dari UI sebelum server berhasil. Konflik versi mempertahankan draft; muat versi terbaru hanya atas tindakan pengguna. Pengingat/prasyarat yang belum didukung dijelaskan; mapping/relasi lama membatasi tindakan berisiko.
 - Mutasi memperbarui detail, daftar dan Home, serta mengirim invalidasi antar-tab tanpa membuang cache minggu kalender. `e2e/notes.spec.ts` menguji alur desktop/mobile dengan API simulasi; backend menguji transaksi/CSRF/owner/konkurensi pada database test nyata.
+
+## Halaman masuk publik
+
+- Halaman Welcome berfokus pada manfaat produk dan satu tindakan **Masuk dengan Google**. Status migrasi/database, label build, callback localhost dan panduan `.env` tidak ditampilkan kepada pengunjung; panduan operasional tetap di README backend.
+- Pemeriksaan sesi dan readiness tetap dilakukan. Loading menonaktifkan masuk; kegagalan layanan memakai pesan publik dan tombol **Coba lagi**, bukan pesan internal server. Parameter error OAuth tidak dipantulkan ke halaman.
+- Akses tetap dibatasi akun Google yang sudah diizinkan. Halaman ini tidak membuka pendaftaran umum, tidak mengubah autentikasi, dan tidak mengklaim pengingat Calendar/ekspor .ics sudah tersedia.
+- Preview adalah tangkapan UI aplikasi dengan data sintetis yang diberi label. Tersedia AVIF responsif 720/1200px dengan PNG fallback, mengikuti tema. Sumber aset tercatat di `assets-source/preview-README.md`.
+- Kode workspace/editor dipisahkan dan dimuat setelah sesi terverifikasi. Jika pemuatan modul gagal, pengguna mendapat tindakan muat ulang. Lighthouse lokal bukan pengukuran produksi atau jaminan Core Web Vitals.
+- Prinsip panduan desain yang diberikan pemilik dirangkum secara kontekstual pada `AGENTS.md`, untuk seluruh frontend tanpa mengganti stack, brand, atau alur data yang sudah bekerja.
+
+## Hari ini dan tindakan tanggal
+
+- Membuka Home tanpa parameter tanggal memilih hari ini dan minggunya menurut zona profil. Tanggal di bawah sapaan selalu menunjukkan hari ini, bukan tanggal yang sedang ditinjau.
+- Jam tampilan diperbarui pada pergantian menit, saat tab kembali terlihat/fokus, dan saat halaman dipulihkan browser. Default hari/minggu ikut berganti saat tengah malam; tidak memakai tanggal UTC atau zona browser secara tidak sengaja.
+- Link eksplisit `?week=...&date=...` tetap bisa dipakai untuk meninjau tanggal lain. Tombol **Hari ini** kembali ke minggu/tanggal sekarang dan membersihkan pilihan eksplisit agar mengikuti hari berikutnya otomatis.
+- Klik blok hari/angka tanggal di Agenda Mingguan untuk memilih hari dan membuka **Tambah agenda** atau **Lihat detail hari**. Form tambah agenda memakai tanggal yang diklik, termasuk pada hari yang sudah memiliki agenda. Escape/tutup mengembalikan fokus ke tombol tanggal.
+- `e2e/home-today.spec.ts` menguji zona profil yang berbeda dari browser, reload, pergantian Minggu-Senin, resume perangkat, keyboard dan tanggal form. `e2e/welcome.spec.ts` menguji state publik dan tema tanpa bypass login aplikasi.

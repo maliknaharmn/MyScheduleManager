@@ -3,6 +3,7 @@ import { Moon, Sun } from 'lucide-react'
 
 type Theme = 'light' | 'dark'
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'light', toggle: () => {} })
+export function useTheme() { return useContext(ThemeContext) }
 export function readTheme(): Theme {
   return document.cookie.split(';').some((cookie) => cookie.trim() === 'myschedule_theme=dark') ? 'dark' : 'light'
 }

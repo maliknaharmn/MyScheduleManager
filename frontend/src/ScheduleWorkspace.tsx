@@ -15,6 +15,7 @@ import { ThemeSwitch } from './theme'
 import { agendaChanged, useCalendarTabSync, useWeek } from './week-cache'
 import { PageHeading } from './components/PageHeading'
 import { NotesList, NoteForm, NoteEditor, NoteDetailScreen } from './NotesWorkspace'
+import { useCurrentTime } from './use-current-time'
 
 type ShellProps = { me: Me; settings: ReactNode; logout: () => void; logoutPending: boolean; logoutError: string }
 
@@ -30,8 +31,8 @@ function addDays(iso: string, amount: number) {
   value.setUTCDate(value.getUTCDate() + amount)
   return dateIso(value)
 }
-function todayInZone(zone: string) {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
+function todayInZone(zone: string, now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
   return `${get('year')}-${get('month')}-${get('day')}`
 }
@@ -58,7 +59,7 @@ function timeLabel(item: Occurrence, day: string, zone: string) {
   const last = localIso(item.ends_at, zone)
   if (first < day) return `Berlanjut hingga ${formatTime(item.ends_at, zone)}`
   if (last > day) return `${formatTime(item.starts_at, zone)} → besok`
-  return `${formatTime(item.starts_at, zone)}–${formatTime(item.ends_at, zone)}`
+  return `${formatTime(item.starts_at, zone)}-${formatTime(item.ends_at, zone)}`
 }
 function categoryIcon(category: string) {
   switch (category) {
@@ -103,7 +104,7 @@ function Shell({ me, settings, logout, logoutPending, logoutError }: ShellProps)
   const addHref = selectedDate ? `/agenda/new?date=${selectedDate}` : '/agenda/new'
   return <div className="app-shell">
     <aside className="app-sidebar">
-      <Link className="app-brand" to="/"><span className="app-brand-mark"><img src="/icons/icon-192.png" alt="" /></span><span>MySchedule</span></Link>
+      <Link className="app-brand" to="/"><span className="app-brand-mark"><img src="/icons/icon-192.png?v=my-paper-1" alt="" /></span><span>MySchedule</span></Link>
       <Navigation />
       <Link className="app-sidebar-add" to={addHref}><Plus size={19} aria-hidden />Tambah agenda</Link>
       <p className="app-sidebar-foot">Ruang pribadi · {me.profile.timezone}</p>
@@ -157,12 +158,12 @@ function ImportantNote({ note }: { note: Note | undefined }) {
   </section>
 }
 
-function WeekRows({ week, selectedDate, onSelect, failed = false }: { week: WeekOverview | undefined; selectedDate?: string; onSelect?: (date: string) => void; failed?: boolean }) {
+function WeekRows({ week, selectedDate, today, menuDate, onSelect, failed = false }: { week: WeekOverview | undefined; selectedDate?: string; today?: string; menuDate?: string | null; onSelect?: (date: string, trigger: HTMLButtonElement) => void; failed?: boolean }) {
   if (!week) return <div className="app-week-loading" role="status">{failed ? 'Agenda belum tersedia.' : 'Memuat agenda minggu…'}</div>
   return <div className="app-week-rows">{week.days.map((day) => {
     const dayText = formatDay(day.date, { weekday: 'short' })
-    return <div className={`app-day-row ${day.date === selectedDate ? 'selected' : ''}`} key={day.date}>
-      {onSelect ? <button className="app-day-date" onClick={() => onSelect(day.date)} aria-label={`Pilih ${formatDay(day.date, { dateStyle: 'full' })}`}><span>{dayText}</span><strong>{day.date.slice(-2)}</strong><small>{formatDay(day.date, { month: 'short' })}</small></button>
+    return <div className={`app-day-row ${day.date === selectedDate ? 'selected' : ''}`} data-date={day.date} key={day.date}>
+      {onSelect ? <button className="app-day-date" onClick={(event) => onSelect(day.date, event.currentTarget)} aria-label={`Buka agenda ${formatDay(day.date, { dateStyle: 'full' })}`} aria-haspopup="dialog" aria-expanded={menuDate === day.date} aria-pressed={selectedDate === day.date} aria-current={day.date === today ? 'date' : undefined} title="Lihat hari atau tambah agenda"><span>{dayText}</span><strong>{day.date.slice(-2)}</strong><small>{day.date === today ? 'Hari ini' : formatDay(day.date, { month: 'short' })}</small></button>
         : <Link className="app-day-date" to={`/day/${day.date}`}><span>{dayText}</span><strong>{day.date.slice(-2)}</strong><small>{formatDay(day.date, { month: 'short' })}</small></Link>}
       <div className="app-day-events">{day.occurrences.length ? day.occurrences.map((item) => {
         const Icon = categoryIcon(item.category)
@@ -177,10 +178,27 @@ function WeekRows({ week, selectedDate, onSelect, failed = false }: { week: Week
   })}</div>
 }
 
+function DayActionsDialog({ date, close, restoreFocus }: { date: string; close: () => void; restoreFocus: HTMLButtonElement | null }) {
+  const ref = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const dialog = ref.current!
+    dialog.showModal()
+    return () => { dialog.close(); if (restoreFocus?.isConnected) restoreFocus.focus() }
+  }, [restoreFocus])
+  return <dialog ref={ref} className="app-dialog app-day-dialog" aria-labelledby="day-actions-title" onCancel={close}>
+    <h2 id="day-actions-title">{formatDay(date, { dateStyle: 'full' })}</h2>
+    <div className="app-day-dialog-links"><Link autoFocus className="app-primary" to={`/agenda/new?date=${date}`}><Plus size={18} aria-hidden />Tambah agenda</Link><Link className="app-secondary" to={`/day/${date}`}>Lihat detail hari <ArrowRight size={17} aria-hidden /></Link></div>
+    <button className="app-secondary app-day-dialog-close" onClick={close}>Tutup</button>
+  </dialog>
+}
+
 function Home({ me }: { me: Me }) {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const today = todayInZone(me.profile.timezone)
+  const now = useCurrentTime()
+  const today = todayInZone(me.profile.timezone, now)
+  const [menuDate, setMenuDate] = useState<string | null>(null)
+  const dayTrigger = useRef<HTMLButtonElement | null>(null)
   const requestedWeek = params.get('week')
   const weekStart = validIso(requestedWeek) ? mondayOf(requestedWeek) : mondayOf(today)
   const requestedDate = params.get('date')
@@ -190,16 +208,20 @@ function Home({ me }: { me: Me }) {
   const notes = useQuery({ queryKey: ['notes', 'open'], queryFn: ({ signal }) => api<ListResult<Note>>('/notes?completion=open&limit=100', { signal }) })
   const selected = overview.data?.days.find((day) => day.date === selectedDate)
   const important = notes.data?.items.find((note) => note.is_important)
-  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: me.profile.timezone, hour: '2-digit', hour12: false }).format(new Date()))
+  const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: me.profile.timezone, hour: '2-digit', hourCycle: 'h23' }).format(now))
   const greeting = hour < 11 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 19 ? 'Selamat sore' : 'Selamat malam'
-  const setSelected = (date: string) => setParams({ week: weekStart, date })
+  const setSelected = (date: string, trigger: HTMLButtonElement) => {
+    dayTrigger.current = trigger
+    setParams(date === today ? {} : { week: weekStart, date })
+    setMenuDate(date)
+  }
   const changeWeek = (amount: number) => {
     const next = addDays(weekStart, amount * 7)
     setParams({ week: next, date: next })
   }
   return <div className="app-home">
     <header className="app-home-header">
-      <div><p className="app-greeting">{greeting}{me.user.display_name?.trim() ? `, ${me.user.display_name.trim()}` : ''}</p><h1>{formatDay(selectedDate, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</h1><span>Hari yang terencana, langkah lebih ringan.</span></div>
+      <div><p className="app-greeting">{greeting}{me.user.display_name?.trim() ? `, ${me.user.display_name.trim()}` : ''}</p><h1><time dateTime={today}>{formatDay(today, { dateStyle: 'full' })}</time></h1><span>Hari yang terencana, langkah lebih ringan.</span></div>
       <div className="app-header-actions"><button onClick={() => navigate('/agenda?focus=search')} aria-label="Cari agenda"><Search size={22} aria-hidden /></button><Link to="/notes" aria-label="Buka catatan"><ListTodo size={22} aria-hidden /></Link></div>
     </header>
     <div className="app-home-top">
@@ -208,13 +230,14 @@ function Home({ me }: { me: Me }) {
     </div>
     {overview.isError && <div className="app-alert" role="alert">{overview.data ? 'Menampilkan cache terakhir. Pembaruan agenda belum berhasil.' : 'Kapasitas dan agenda belum dapat dimuat.'} <button onClick={() => void overview.refetch()}>Coba lagi</button></div>}
     <section className="app-week-panel">
-      <div className="app-section-heading"><h2>Agenda Mingguan</h2><div className="app-week-switch"><span>{formatDay(weekStart, { day: 'numeric', month: 'short' })} – {formatDay(addDays(weekStart, 6), { day: 'numeric', month: 'short', year: 'numeric' })}</span><button onClick={() => changeWeek(-1)} aria-label="Minggu sebelumnya"><ChevronLeft size={21} aria-hidden /></button><button onClick={() => changeWeek(1)} aria-label="Minggu berikutnya"><ChevronRight size={21} aria-hidden /></button></div></div>
+      <div className="app-section-heading"><h2>Agenda Mingguan</h2><div className="app-week-switch"><span>{formatDay(weekStart, { day: 'numeric', month: 'short' })} - {formatDay(addDays(weekStart, 6), { day: 'numeric', month: 'short', year: 'numeric' })}</span><button className="app-week-today" onClick={() => setParams({})} aria-label="Kembali ke hari ini">Hari ini</button><button onClick={() => changeWeek(-1)} aria-label="Minggu sebelumnya"><ChevronLeft size={21} aria-hidden /></button><button onClick={() => changeWeek(1)} aria-label="Minggu berikutnya"><ChevronRight size={21} aria-hidden /></button></div></div>
       {overview.isFetching && overview.data && <p className="app-cache-status" role="status">Menampilkan cache · memperbarui…</p>}
-      <WeekRows week={overview.data} selectedDate={selectedDate} onSelect={setSelected} failed={overview.isError} />
+      <WeekRows week={overview.data} selectedDate={selectedDate} today={today} menuDate={menuDate} onSelect={setSelected} failed={overview.isError} />
       <div className="app-week-footer"><span>{overview.data ? `${overview.data.days.reduce((sum, day) => sum + day.occurrence_count, 0)} tampilan agenda dalam minggu ini` : overview.isError ? 'Data agenda belum tersedia' : 'Data agenda sedang dimuat'}</span><Link to="/agenda">Lihat semua agenda <ArrowRight size={16} aria-hidden /></Link></div>
     </section>
     <section className="app-notes-teaser"><div className="app-teaser-icon"><FileText size={22} aria-hidden /></div><div><h2>Catatan belum selesai</h2><p>{notes.data?.items.length ? `${notes.data.items.length} catatan perlu dipantau` : 'Target, checklist, dan prasyarat tersimpan terpisah dari agenda.'}</p></div><Link to="/notes" aria-label="Lihat semua catatan"><ChevronRight size={20} aria-hidden /></Link></section>
     <Link to={`/agenda/new?date=${selectedDate}`} className="app-floating-add"><Plus size={21} aria-hidden />Agenda</Link>
+    {menuDate && <DayActionsDialog date={menuDate} close={() => setMenuDate(null)} restoreFocus={dayTrigger.current} />}
   </div>
 }
 
@@ -384,7 +407,7 @@ function AgendaDetail({ me }: { me: Me }) {
     {location.state?.saved && <p className="app-save-confirmation" role="status"><Check size={17} aria-hidden />Agenda tersimpan.<Link to={`/agenda/new?date=${row?.time.range_start ?? ''}`}>Tambah lagi <Plus size={15} aria-hidden /></Link></p>}
     {schedule.isPending && <p role="status">Memuat detail agenda…</p>}
     {schedule.isError && <p role="alert" className="app-alert">Agenda belum dapat dimuat. <button onClick={() => void schedule.refetch()}>Coba lagi</button></p>}
-    {row && <div className="app-detail-card"><p>{row.tags.some((tag) => tag.system_key === 'important') && <span className="app-important"><Star size={15} fill="currentColor" aria-hidden />Important</span>}</p><dl><div><dt>Tanggal</dt><dd>{row.time.range_start ? `${formatDay(row.time.range_start, { dateStyle: 'medium' })}${row.time.range_end !== row.time.range_start ? ` – ${formatDay(row.time.range_end!, { dateStyle: 'medium' })}` : ''}` : row.time.starts_at ? formatDay(localIso(row.time.starts_at, row.time.timezone), { dateStyle: 'medium' }) : '—'}</dd></div><div><dt>Waktu</dt><dd>{row.time.mode === 'daily_pattern' ? `${row.time.start_local_time}–${row.time.end_local_time}${row.time.end_day_offset ? ' · selesai besok' : ''}` : row.time.mode === 'timed_interval' && row.time.starts_at && row.time.ends_at ? `${formatTime(row.time.starts_at, row.time.timezone)}–${formatTime(row.time.ends_at, row.time.timezone)}` : row.time.mode === 'all_day' ? 'Sepanjang hari' : 'Tanpa jam'}</dd></div><div><dt>Zona waktu</dt><dd>{row.time.timezone}</dd></div><div><dt>Pengingat .ics</dt><dd>{row.reminder_offsets_minutes.length ? row.reminder_offsets_minutes.map((minutes) => minutes === 1440 ? '1 hari sebelumnya' : minutes === 60 ? '1 jam sebelumnya' : `${minutes} menit sebelumnya`).join(', ') : 'Tidak disetel'}</dd></div></dl><p className="app-detail-note">Agenda ini tersimpan di aplikasi. Integrasi dan ekspor Google Calendar belum aktif pada build ini.</p></div>}
+    {row && <div className="app-detail-card"><p>{row.tags.some((tag) => tag.system_key === 'important') && <span className="app-important"><Star size={15} fill="currentColor" aria-hidden />Important</span>}</p><dl><div><dt>Tanggal</dt><dd>{row.time.range_start ? `${formatDay(row.time.range_start, { dateStyle: 'medium' })}${row.time.range_end !== row.time.range_start ? ` - ${formatDay(row.time.range_end!, { dateStyle: 'medium' })}` : ''}` : row.time.starts_at ? formatDay(localIso(row.time.starts_at, row.time.timezone), { dateStyle: 'medium' }) : '-'}</dd></div><div><dt>Waktu</dt><dd>{row.time.mode === 'daily_pattern' ? `${row.time.start_local_time}-${row.time.end_local_time}${row.time.end_day_offset ? ' · selesai besok' : ''}` : row.time.mode === 'timed_interval' && row.time.starts_at && row.time.ends_at ? `${formatTime(row.time.starts_at, row.time.timezone)}-${formatTime(row.time.ends_at, row.time.timezone)}` : row.time.mode === 'all_day' ? 'Sepanjang hari' : 'Tanpa jam'}</dd></div><div><dt>Zona waktu</dt><dd>{row.time.timezone}</dd></div><div><dt>Pengingat .ics</dt><dd>{row.reminder_offsets_minutes.length ? row.reminder_offsets_minutes.map((minutes) => minutes === 1440 ? '1 hari sebelumnya' : minutes === 60 ? '1 jam sebelumnya' : `${minutes} menit sebelumnya`).join(', ') : 'Tidak disetel'}</dd></div></dl><p className="app-detail-note">Agenda ini tersimpan di aplikasi. Pengingat Google Calendar dan ekspor .ics belum tersedia.</p></div>}
   </div>
 }
 

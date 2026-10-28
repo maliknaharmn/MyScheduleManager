@@ -6,12 +6,13 @@
     <meta name="theme-color" content="#0752CB" />
     <script>try{const theme=document.cookie.split(';').some(c=>c.trim()==='myschedule_theme=dark')?'dark':'light';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme}catch{}</script>
     <meta name="description" content="Lihat kapasitas jadwal dan jaga target penting tetap terlihat." />
+    <script>if(location.pathname==='/'){const p=document.createElement('link');p.rel='preload';p.as='image';p.type='image/avif';p.fetchPriority='high';const t=document.documentElement.dataset.theme==='dark'?'dark':'light';p.imageSrcset=`/previews/home-${t}-720.avif 720w, /previews/home-${t}-1200.avif 1200w`;p.imageSizes='(max-width: 760px) calc(100vw - 40px), (max-width: 1060px) calc(100vw - 64px), 636px';document.head.append(p)}</script>
     <meta name="apple-mobile-web-app-title" content="MySchedule" />
     <title>MySchedule Manager</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=my-paper-1" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png?v=my-paper-1" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=my-paper-1" />
+    <link rel="manifest" href="/manifest.webmanifest?v=my-paper-1" />
   </head>
   <body>
     <div id="root"></div>

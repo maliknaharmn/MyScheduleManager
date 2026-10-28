@@ -8,6 +8,7 @@ import './app.css'
 import './agenda-form.css'
 import './theme.css'
 import './notes.css'
+import './welcome.css'
 import { applyTheme, readTheme } from './theme'
 
 applyTheme(readTheme())

@@ -1,14 +1,15 @@
 import { expect, test } from '@playwright/test'
 
-test('private foundation loads with no mock login and no mobile overflow', async ({ page }) => {
+test('public Welcome hides development diagnostics and has no mobile overflow', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Jadwal jelas/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Login menunggu konfigurasi' })).toBeDisabled()
-  await expect(page.getByText('Migrasi terpasang, role API terbatas.')).toBeVisible()
-  await page.getByRole('button', { name: /Lihat panduan konfigurasi/ }).click()
-  await expect(page.getByText('Konfigurasi disimpan di backend/.env')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled()
+  await expect(page.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  await expect(page.getByText(/Kesiapan lokal|API FastAPI|Migrasi terpasang|backend\/\.env|Build 02/)).toHaveCount(0)
+  await page.getByText('Apakah terhubung ke Google Calendar?').click()
+  await expect(page.getByText(/Pengingat Google Calendar dan ekspor .ics belum tersedia/)).toBeVisible()
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
   expect(overflow).toBe(false)
   expect(errors).toEqual([])

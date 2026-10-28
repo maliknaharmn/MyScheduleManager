@@ -9,9 +9,9 @@ const status = { phase: 'foundation', database: 'ready', google_login_configured
   calendar_integration: 'not_implemented', capabilities: { schedules: false, notes: false, calendar_reminders: false },
   auth_handshake_storage: 'single_process_memory' }
 
-function setup() {
+function setup(entry = '/') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  render(<QueryClientProvider client={client}><MemoryRouter><App /></MemoryRouter></QueryClientProvider>)
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[entry]}><App /></MemoryRouter></QueryClientProvider>)
   return client
 }
 
@@ -22,27 +22,49 @@ beforeEach(() => {
   }))
 })
 
-test('unconfigured login is disabled and does not pretend to have user data', async () => {
+test('unavailable login uses public copy without developer diagnostics', async () => {
   const client = setup()
-  expect(await screen.findByRole('button', { name: /Login menunggu konfigurasi/ })).toBeDisabled()
-  expect(screen.getByText('Migrasi terpasang, role API terbatas.')).toBeVisible()
-  expect(screen.getByText(/Agenda, kapasitas mingguan, catatan, dan checklist sudah tersedia setelah login/)).toBeVisible()
+  expect(await screen.findByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled()
+  expect(screen.getByRole('alert')).toHaveTextContent('Layanan masuk sedang tidak tersedia.')
+  expect(screen.queryByText(/Migrasi|API FastAPI|Kesiapan lokal|backend\/\.env|Build 02/)).not.toBeInTheDocument()
+  expect(screen.getByText('Contoh tampilan dengan data ilustrasi.')).toBeVisible()
   expect(screen.queryByRole('button', { name: /demo|natural language|bahasa alami/i })).not.toBeInTheDocument()
   client.clear()
 })
 
-test('configuration guide explains secure local setup', async () => {
+test('public help explains actual access and Calendar limitations, not local configuration', async () => {
   const client = setup()
-  await userEvent.click(await screen.findByRole('button', { name: /Lihat panduan konfigurasi/ }))
-  expect(screen.getByText('Konfigurasi disimpan di backend/.env')).toBeVisible()
-  expect(screen.getByText('http://localhost:5173/api/v1/auth/google/callback')).toBeVisible()
+  await screen.findByRole('button', { name: 'Masuk belum tersedia' })
+  expect(screen.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  await userEvent.click(screen.getByText('Apakah terhubung ke Google Calendar?'))
+  expect(screen.getByText(/Pengingat Google Calendar dan ekspor .ics belum tersedia/)).toBeVisible()
+  expect(screen.queryByText(/localhost:5173/)).not.toBeInTheDocument()
   client.clear()
 })
 
 test('network errors are not rendered as an empty private calendar', async () => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
   const client = setup()
-  expect(await screen.findByRole('alert')).toHaveTextContent('Server belum dapat dijangkau')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Koneksi belum berhasil')
   expect(screen.queryByText('0 agenda')).not.toBeInTheDocument()
+  client.clear()
+})
+
+test('ready service has one real Google login link and does not claim unrestricted signups', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/me')
+    ? new Response(JSON.stringify({ error: { code: 'AUTH_REQUIRED' } }), { status: 401 })
+    : new Response(JSON.stringify({ data: { ...status, google_login_configured: true }, meta: { request_id: 'test' } }))))
+  const client = setup()
+  const login = await screen.findByRole('link', { name: 'Masuk dengan Google' })
+  expect(login).toHaveAttribute('href', '/api/v1/auth/google/start?return_to=/')
+  expect(screen.getAllByRole('link', { name: 'Masuk dengan Google' })).toHaveLength(1)
+  expect(screen.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  client.clear()
+})
+
+test('OAuth errors render fixed public copy rather than echoing the URL', async () => {
+  const client = setup('/?error=PRIVATE_INTERNAL_TRACE')
+  await screen.findByRole('button', { name: 'Masuk belum tersedia' })
+  expect(screen.queryByText(/PRIVATE_INTERNAL_TRACE/)).not.toBeInTheDocument()
   client.clear()
 })

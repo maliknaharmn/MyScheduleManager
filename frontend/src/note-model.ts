@@ -18,6 +18,6 @@ export function noteStatus(note: Pick<Note, 'completed_at' | 'target_start' | 't
 }
 
 export function noteTimestamp(value: string | undefined, zone: string) {
-  if (!value) return '—'
+  if (!value) return '-'
   return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: zone }).format(new Date(value))
 }
