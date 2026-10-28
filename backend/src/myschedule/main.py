@@ -27,6 +27,7 @@ from myschedule.config import Settings, get_settings
 from myschedule.database import Database
 from myschedule.errors import ApiError, api_error_handler, envelope, validation_error_handler
 from myschedule.models import AppSession, Profile
+from myschedule.resources import router as resource_router
 from myschedule.schemas import (
     EnvelopeResponse,
     ErrorResponse,
@@ -61,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.database = Database(settings)
     app.state.handshakes = HandshakeStore()
     app.state.google = GoogleClient(settings)
+    app.include_router(resource_router)
 
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)
@@ -125,7 +127,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "database": "ready" if await database_ready() else "not_ready",
                 "google_login_configured": settings.google_login_configured,
                 "calendar_integration": "not_implemented",
-                "capabilities": {"schedules": False, "notes": False, "calendar_reminders": False},
+                "capabilities": {"schedules": True, "notes": True, "calendar_reminders": False},
                 "auth_handshake_storage": "single_process_memory",
             },
         )

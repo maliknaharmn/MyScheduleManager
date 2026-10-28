@@ -1,6 +1,6 @@
 # MySchedule Manager
 
-**Status:** fondasi React/FastAPI/PostgreSQL berjalan dan dites lokal. **Belum MVP lengkap**—CRUD agenda/catatan dan pengingat Google belum aktif.
+**Status:** React/FastAPI/PostgreSQL berjalan dan dites lokal; agenda serta catatan mendukung tambah/detail/edit/hapus. Catatan memiliki checklist yang dapat dikelola, penyelesaian eksplisit dan buka kembali; tema light/dark serta cache mingguan/bulanan tersedia. **Belum MVP lengkap**—pengingat Google dan pengelolaan prasyarat terhubung belum aktif.
 
 Repository ini public. Secret, `.env`, data lokal, dan direktori perencanaan pribadi `docs/` tidak diikutkan dalam Git. Panduan yang tersedia setelah clone ada di [backend README](backend/README.md) dan [frontend README](frontend/README.md).
 

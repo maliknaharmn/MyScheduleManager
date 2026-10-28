@@ -1,6 +1,6 @@
 # Backend — FastAPI
 
-Fondasi lokal pertama: 14 model SQLAlchemy + migrasi PostgreSQL/RLS, domain kapasitas, Google OIDC/sesi/CSRF, profil, health/config status, dan adapter Calendar untuk risk spike. **Belum CRUD agenda/catatan atau worker reminder produksi.**
+Fondasi lokal: 14 model SQLAlchemy + migrasi PostgreSQL/RLS, domain kapasitas, Google OIDC/sesi/CSRF, profil, health/config status, dan adapter Calendar untuk risk spike. Agenda dan catatan mendukung create/read/update/soft-delete berversi; catatan juga mendukung pengelolaan checklist, penyelesaian eksplisit dan buka kembali. **Belum worker reminder produksi atau pengelolaan prasyarat.**
 
 ## FastAPI Cloud
 
@@ -48,9 +48,21 @@ Frontend Vite memproxy `/api` dan `/health` ke backend, sehingga cookie dan CSRF
 - `GET /api/v1/status`: readiness tanpa secret; menandai capability MVP yang belum aktif secara jujur.
 - `GET /api/v1/auth/google/start`, `GET /api/v1/auth/google/callback`.
 - `GET /api/v1/me`, `PATCH /api/v1/me/profile`, `POST /api/v1/auth/logout`.
+- `GET /api/v1/tags`; `GET/POST /api/v1/schedules`; `GET /api/v1/schedules/{id}`.
+- `PATCH/DELETE /api/v1/schedules/{id}`: owner + CSRF + `expected_version`; konflik 409, resource terhapus/akun lain 404. PATCH memakai seluruh field input agenda beserta versi; DELETE menerima JSON versi. Berlaku untuk seluruh seri berulang.
+- `GET /api/v1/overview/week?week_start=YYYY-MM-DD` untuk Senin–Minggu berdasarkan zona profil dan mesin kapasitas.
+- Parameter `weeks=1..5` pada overview memuat sampai 35 hari dalam satu rentang query untuk prefetch bulanan; default tetap 1 minggu. Tidak ada cache privat di cookie atau respons HTTP publik.
+- `GET/POST /api/v1/notes`; `GET /api/v1/notes/{id}`; `PATCH /api/v1/notes/{id}/checklist-items/{item_id}`; `POST /api/v1/notes/{id}/complete`.
+- `PATCH/DELETE /api/v1/notes/{id}`; `POST /api/v1/notes/{id}/reopen`: owner + CSRF + `expected_version`. PATCH menerima seluruh field editable (judul, isi, target, Important, checklist). Checklist dengan `id` mempertahankan centang/timestamp; tanpa `id` membuat langkah baru; ID lama yang dihilangkan menghapus langkah. ID berulang/asing ditolak; urutan array menentukan posisi.
+- Catatan selesai harus dibuka kembali sebelum edit/toggle. Complete dengan checklist tersisa ditolak `409 CHECKLIST_INCOMPLETE` kecuali konfirmasi `allow_incomplete_checklist: true`. Complete/reopen tidak mengubah centang. Detail/mutasi menyertakan timestamp dan metadata jumlah relasi/mapping; daftar tetap 2 query data.
+- Delete memakai soft delete dan versi, menghilangkan catatan dari seluruh daftar/detail. Calendar mapping lama menahan edit/delete/complete/reopen; tautan prasyarat menahan delete/reopen dan catatan yang memiliki prasyarat menahan complete sampai pengelolaan relasi tersedia.
 - `/docs` dan `/openapi.json` tersedia hanya non-production.
 
 Login Google hanya aktif setelah OAuth/allowlist/secret/database dikonfigurasi. Tidak ada endpoint dev-login, fake user, atau bypass auth. Callback flow dites menggunakan provider mock; Google nyata belum diuji. Handshake state/nonce/PKCE saat ini tersimpan sekali pakai di memori proses dengan TTL dan browser binding: restart gagal tertutup. **Jalankan satu API worker saja untuk fase ini; multi-worker/replica memerlukan shared handshake storage terlebih dahulu.**
+
+Alur baru memakai sesi pemilik akun, CSRF untuk mutasi, dan aturan kapasitas domain (durasi bertumpuk dihitung sekali; agenda tanpa durasi membuat hasil parsial). Pengingat yang disimpan belum membuat notifikasi. Penyelesaian catatan dengan prasyarat atau Calendar mapping lama ditahan sampai lifecycle pengingat selesai dibangun.
+
+Daftar agenda memuat tag/pengingat secara batch (3 query data untuk sampai 100 agenda), dan daftar catatan memuat checklist secara batch (2 query data). Jumlah ini tidak termasuk lookup sesi dan `set_config` RLS. Tes regresi di `tests/test_resources.py` memeriksa jumlah query, asosiasi relasi, urutan, dan batas daftar pada PostgreSQL test; aturan owner/CSRF tetap berlaku.
 
 ## Tes dan kontrak
 

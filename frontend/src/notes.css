@@ -1,0 +1,68 @@
+/* A centred working sheet: 760px content + 2 × 44px desktop gutters = 848px. */
+.app-main:has(.notes-page) { width: min(100%, 848px); }
+.notes-page { width: 100%; }
+.notes-page .app-page-heading h1 { font-size: 28px; font-weight: 650; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.notes-page .app-page-heading > div { min-width: 0; max-width: 100%; }
+.notes-page .app-page-heading { flex-wrap: wrap; }
+.notes-page .app-list-panel { min-width: 0; }
+.notes-page .app-tab-row button { font-size: 14px; }
+.notes-list-count { font-size: 13px; margin: 0 0 12px; }
+.notes-list-item > div { width: 100%; }
+.notes-list-item p { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notes-list-item strong svg { display: inline; color: var(--app-ink); }
+.notes-page .app-filter-bar input::placeholder { color: var(--app-muted); opacity: 1; }
+.notes-feedback { margin-bottom: 16px; font-size: 14px; color: var(--app-ink) !important; }
+.notes-card { padding: 24px; }
+.notes-card .notes-summary { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin: 0 0 16px; }
+.notes-card .notes-summary > div { display: grid; grid-template-columns: 1fr; gap: 6px; border: 0; padding: 0; font-size: 14px; }
+.notes-summary dd { font-weight: 600; }
+.notes-priority { display: flex; align-items: center; gap: 6px; color: var(--app-ink) !important; font-size: 13px; margin: 0 0 16px; }
+.notes-section { padding: 20px 0; border-top: 1px solid var(--app-line); }
+.notes-section h2, .notes-checklist-editor h2 { font-size: 16px; line-height: 1.4; letter-spacing: -.015em; margin-bottom: 10px; }
+.notes-section > p { font-size: 14px; }
+.notes-section .notes-body { color: var(--app-ink); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 1.6; }
+.notes-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.notes-section-heading h2 { margin-bottom: 0; }
+.notes-section-heading a { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; color: var(--app-link); font-size: 14px; }
+.notes-section .app-progress { margin: 12px 0; height: 6px; }
+.notes-checklist { gap: 0; }
+.notes-checklist label { min-height: 44px; padding: 6px 0; align-items: flex-start; line-height: 1.5; font-size: 14px; }
+.notes-checklist input { margin-top: 2px; flex: none; }
+.notes-checklist label > span { min-width: 0; overflow-wrap: anywhere; }
+.notes-checked { text-decoration: line-through; color: var(--app-muted); }
+.notes-hint { font-size: 13px !important; line-height: 1.5; margin-top: 10px; }
+.notes-lifecycle .app-primary { margin-top: 14px; }
+.notes-system-details { border-top: 1px solid var(--app-line); padding-top: 8px; }
+.notes-system-details summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size: 14px; font-weight: 600; }
+.notes-system-details > p { font-size: 14px; margin: 8px 0; }
+.notes-card .notes-audit { margin-bottom: 0; }
+.notes-card .notes-audit > div { grid-template-columns: 110px minmax(0, 1fr); gap: 12px; font-size: 13px; }
+.notes-dialog-copy p { font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.notes-card > .app-alert { margin: 16px 0 0; }
+.notes-form { max-width: none; gap: 16px; }
+.notes-form .notes-form-body { min-width: 0; display: grid; gap: 20px; font-weight: 400; }
+.notes-form input:not([type=checkbox]), .notes-form textarea { font-size: 16px; font-weight: 400; min-width: 0; }
+.notes-form input::placeholder, .notes-form textarea::placeholder { color: var(--app-muted); opacity: 1; }
+.notes-checklist-editor { min-width: 0; scroll-margin-top: 24px; }
+.notes-checklist-editor > p { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+.notes-checklist-editor ol { display: grid; gap: 16px; list-style: none; margin: 16px 0; padding: 0; }
+.notes-checklist-editor li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+.notes-item-actions { display: flex; align-items: center; gap: 4px; margin-top: 27px; }
+.notes-item-actions button { width: 44px; min-height: 45px; padding: 10px; }
+.notes-item-state { display: inline-flex; align-items: center; gap: 4px; color: var(--app-muted); font-size: 12px; font-weight: 400; }
+.notes-removal-warning { margin: 12px 0 0; color: var(--app-danger) !important; }
+.notes-form-actions { border-top: 1px solid var(--app-line); padding-top: 16px; }
+[aria-disabled=true] { cursor: not-allowed; }
+@media (max-width: 760px) {
+  .notes-page .app-tab-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; overflow: visible; }
+  .notes-page .app-page-heading h1 { font-size: 24px; }
+  .notes-card { padding: 18px; }
+  .notes-card .notes-summary { grid-template-columns: 1fr; gap: 16px; }
+  .notes-card .notes-audit > div { grid-template-columns: 1fr; gap: 4px; }
+  .notes-form .notes-form-body { gap: 16px; }
+  .notes-checklist-editor li { grid-template-columns: 1fr; gap: 4px; }
+  .notes-item-actions { margin-top: 0; justify-content: flex-end; }
+  .notes-form-actions { position: sticky; bottom: calc(65px + env(safe-area-inset-bottom)); z-index: 10; background: var(--app-surface); padding: 12px 0; }
+  .notes-form-actions .app-primary { flex: 1; }
+  .notes-form input, .notes-form textarea, .notes-form button { scroll-margin-bottom: 160px; }
+}

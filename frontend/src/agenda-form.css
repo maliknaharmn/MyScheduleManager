@@ -1,0 +1,46 @@
+/* Keep the existing brand and shell; shorten only the agenda creation task. */
+.app-main:has(.app-agenda-composer) { width: min(100%, 848px); }
+.app-agenda-composer { width: 100%; }
+.app-agenda-composer .app-page-heading h1 { font-size: 28px; font-weight: 650; letter-spacing: -.025em; }
+.app-agenda-composer .app-page-heading { margin-bottom: 20px; }
+.app-agenda-form { gap: 16px; padding: 24px; }
+.app-agenda-form .app-form-body { display: grid; gap: 12px; min-width: 0; }
+.app-agenda-form .app-form-body > label, .app-agenda-form .app-date-row > label { font-size: 14px; }
+.app-agenda-form input:not([type=checkbox]):not([type=radio]), .app-agenda-form select { font-size: 16px; min-width: 0; }
+.app-agenda-form input::placeholder { color: var(--app-muted); opacity: 1; }
+.app-agenda-form .app-choice { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px !important; }
+.app-agenda-form .app-choice label { position: relative; justify-content: center; padding: 8px 4px; white-space: nowrap; font-size: 13px; cursor: pointer; }
+.app-agenda-form .app-choice input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.app-agenda-form .app-choice label:has(input:checked) { border-color: #9eafc9; background: #edf3fb; }
+.app-agenda-form .app-choice label:has(input:focus-visible) { outline: 3px solid var(--app-blue); outline-offset: 3px; }
+.app-agenda-form .app-checkbox { min-height: 44px; font-size: 14px; }
+.app-agenda-form .app-checkbox input { flex-shrink: 0; }
+.app-date-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; }
+.app-time-section { display: grid; gap: 8px; }
+.app-agenda-form .app-time-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.app-duration-presets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.app-duration-presets button { min-height: 44px; border: 1px solid var(--app-line); border-radius: 8px; background: #fff; padding: 6px 12px; font-size: 13px; color: var(--app-ink); }
+.app-duration-presets button[aria-pressed=true] { background: #edf3fb; border-color: #9eafc9; }
+.app-duration-presets button:hover { border-color: var(--app-blue); }
+.app-duration-presets > span { margin-left: auto; color: var(--app-muted); font-size: 12px; }
+.app-agenda-form .app-disclosure { font-size: 14px; background: #f7f9fc; }
+.app-agenda-form .app-form-actions { border-top: 1px solid var(--app-line); padding-top: 16px; }
+.app-agenda-form .app-primary:disabled { background: var(--app-blue-deep); color: #fff; opacity: 1; }
+.app-save-confirmation { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; font-size: 14px; }
+.app-save-confirmation > a { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--app-blue); min-height: 44px; font-weight: 600; }
+@media (max-width: 760px) {
+  .app-nav-mobile { padding-inline: 16px; }
+  .app-nav-mobile a { font-size: 11px; }
+  .app-agenda-composer .app-page-heading h1 { font-size: 24px; }
+  .app-agenda-composer .app-page-heading p { font-size: 14px; }
+  .app-agenda-composer .app-back { margin-bottom: 10px; }
+  .app-agenda-form { padding: 16px; }
+  .app-agenda-form .app-form-body { gap: 12px; }
+  .app-agenda-form .app-form-actions { position: sticky; bottom: calc(65px + env(safe-area-inset-bottom)); z-index: 10; background: #fff; padding: 12px 0; }
+  .app-agenda-form .app-form-actions .app-primary { flex: 1; }
+  .app-agenda-form input, .app-agenda-form select, .app-agenda-form button { scroll-margin-bottom: 160px; }
+  .app-duration-presets > span { flex-basis: 100%; margin-left: 0; }
+}
+@media (max-width: 360px) {
+  .app-agenda-form .app-choice label { font-size: 12px; padding: 6px 3px; }
+}

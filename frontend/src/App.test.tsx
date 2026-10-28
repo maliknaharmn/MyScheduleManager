@@ -26,7 +26,7 @@ test('unconfigured login is disabled and does not pretend to have user data', as
   const client = setup()
   expect(await screen.findByRole('button', { name: /Login menunggu konfigurasi/ })).toBeDisabled()
   expect(screen.getByText('Migrasi terpasang, role API terbatas.')).toBeVisible()
-  expect(screen.getByText(/belum MVP lengkap/)).toBeVisible()
+  expect(screen.getByText(/Agenda, kapasitas mingguan, catatan, dan checklist sudah tersedia setelah login/)).toBeVisible()
   expect(screen.queryByRole('button', { name: /demo|natural language|bahasa alami/i })).not.toBeInTheDocument()
   client.clear()
 })
