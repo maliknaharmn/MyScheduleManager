@@ -3,6 +3,18 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { createLegalPreview } from './preview-legal.mjs'
 
+test('Google ownership verification is in the static homepage head before and after build', async () => {
+  const token = 'lA8eMf-TnpUoUMN4jm3_-2j4k3BpfpFQcDjiqR3xPsM'
+  for (const file of ['../index.html', '../dist/index.html']) {
+    const html = await readFile(new URL(file, import.meta.url), 'utf8')
+    const head = html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i)?.[1]
+    assert.ok(head, `${file}: HTML head is required`)
+    const tags = head.match(/<meta\b[^>]*\bname="google-site-verification"[^>]*>/g) ?? []
+    assert.equal(tags.length, 1, `${file}: keep exactly one owner verification tag`)
+    assert.equal(tags[0].match(/\bcontent="([^"]*)"/)?.[1], token)
+  }
+})
+
 test('release documents are built as public HTML with contact details and working local references', async () => {
   const server = createLegalPreview()
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))

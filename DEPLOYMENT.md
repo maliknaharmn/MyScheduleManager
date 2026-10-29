@@ -3,7 +3,8 @@
 Production frontend: **https://myschedulemanager.netlify.app**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.
-Latest production deploy ID: `6ae307e299941b4da528f2e9` (public legal/cookie release, 2026-10-29).
+Latest production deploy ID: `6ae335f6462dd1c3e6bcdc06` (homepage ownership tag, 2026-10-29).
+Public legal/cookie release deploy ID: `6ae307e299941b4da528f2e9`.
 Initial deploy ID: `6ae21772a5f42aa95f4f02eb`.
 The owner changed visibility to Public; anonymous HTTP and browser checks now
 reach the application successfully.
@@ -85,6 +86,29 @@ configuration; readiness also checks roles and migrations, not only process live
 - Branding terms of service: `https://myschedulemanager.netlify.app/terms/`.
 - Public cookie policy: `https://myschedulemanager.netlify.app/cookies/`.
 - Netlify deploy does not update Google Console or FastAPI Cloud settings for you.
+
+### Homepage ownership verification
+
+Google Auth Platform may report that the homepage is not registered to the project
+owner. Verify the exact `https://myschedulemanager.netlify.app/` URL-prefix property
+in Google Search Console using a Google account that is an Owner or Editor of the
+OAuth project. The owner-supplied `google-site-verification` meta tag is stored
+directly in `frontend/index.html` so it is present in the production HTML response
+without JavaScript, login or API access. It is a public verification token, not an
+OAuth client secret; do not move it into a client-side effect or remove it after
+verification, because Google can check it again.
+
+After deployment, confirm the exact tag in the live homepage source, click
+**Verify** in Search Console, and wait **24 hours after successful verification**
+before retrying the failed Branding check as instructed by Google. Installing the
+tag does not itself confirm Search Console ownership or complete brand verification.
+This process does not fix backend database readiness.
+
+Tag deployment on 2026-10-29: live `/` returned HTML 200 containing exactly one
+verification meta tag with the owner-provided value inside its static `<head>`.
+All three policy URLs still returned 200. Production build, 24 unit tests,
+3 static-document/ownership tests and 84 desktop/mobile E2E passed. Search Console
+ownership and Google Auth Platform approval still require the owner's actions.
 
 ## Public legal/cookie release (2026-10-29)
 
