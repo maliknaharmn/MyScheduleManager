@@ -45,3 +45,11 @@ test-results/
 *.tsbuildinfo
 .DS_Store
 .neon
+
+# Local deployment linkage and installed agent tooling (never publish credentials).
+.netlify/
+/.agents/
+/skills-lock.json
+
+# Superseded local review drafts; release policies have their own HTML entries.
+/frontend/legal-drafts/

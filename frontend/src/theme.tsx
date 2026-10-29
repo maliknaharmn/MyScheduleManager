@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { Moon, Sun } from 'lucide-react'
+import { allowsStorage, persistTheme } from './storage-consent'
 
 type Theme = 'light' | 'dark'
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void }>({ theme: 'light', toggle: () => {} })
 export function useTheme() { return useContext(ThemeContext) }
 export function readTheme(): Theme {
-  return document.cookie.split(';').some((cookie) => cookie.trim() === 'myschedule_theme=dark') ? 'dark' : 'light'
+  try { return allowsStorage('preferences') && document.cookie.split(';').some((cookie) => cookie.trim() === 'myschedule_theme=dark') ? 'dark' : 'light' }
+  catch { return 'light' }
 }
 export function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme
@@ -17,7 +19,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => { applyTheme(theme) }, [theme])
   const toggle = () => {
     const next = theme === 'light' ? 'dark' : 'light'
-    document.cookie = `myschedule_theme=${next}; Path=/; Max-Age=2592000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`
+    persistTheme(next)
     applyTheme(next)
     setTheme(next)
   }

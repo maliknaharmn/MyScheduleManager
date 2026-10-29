@@ -1,0 +1,41 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# Keep the browser on one origin for Google OAuth cookies and CSRF.
+# Specific proxy rules must precede the React Router history fallback.
+[[redirects]]
+  from = "/api/*"
+  to = "https://myschedulemanager.fastapicloud.dev/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health/*"
+  to = "https://myschedulemanager.fastapicloud.dev/health/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# These headers cover static files only. The backend must keep no-store on API
+# responses, including redirects and errors; Netlify headers cannot override them.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

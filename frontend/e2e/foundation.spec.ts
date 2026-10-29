@@ -6,7 +6,7 @@ test('public Welcome hides development diagnostics and has no mobile overflow', 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Jadwal jelas/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled()
-  await expect(page.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  await expect(page.getByText(/Siapa pun bisa masuk dengan akun Google/)).toBeVisible()
   await expect(page.getByText(/Kesiapan lokal|API FastAPI|Migrasi terpasang|backend\/\.env|Build 02/)).toHaveCount(0)
   await page.getByText('Apakah terhubung ke Google Calendar?').click()
   await expect(page.getByText(/Pengingat Google Calendar dan ekspor .ics belum tersedia/)).toBeVisible()

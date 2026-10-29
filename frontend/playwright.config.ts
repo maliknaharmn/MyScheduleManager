@@ -18,7 +18,7 @@ export default defineConfig({
       cwd: fileURLToPath(new URL('../backend', import.meta.url)),
       url: 'http://127.0.0.1:8001/health/live',
       reuseExistingServer: false,
-      env: { GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '', ALLOWED_GOOGLE_EMAILS: '[]', APP_ENV: 'test' },
+      env: { GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '', APP_ENV: 'test' },
     },
     {
       command: 'npm run dev -- --port 4173',

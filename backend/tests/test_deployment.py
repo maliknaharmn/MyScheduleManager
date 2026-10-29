@@ -37,7 +37,6 @@ def test_fastapi_run_starts_from_project_config_without_database_or_google(tmp_p
             "MIGRATION_DATABASE_URL": "",
             "SESSION_SECRET": "",
             "COOKIE_SECURE": "false",
-            "ALLOWED_GOOGLE_EMAILS": "[]",
             "GOOGLE_CLIENT_ID": "",
             "GOOGLE_CLIENT_SECRET": "",
             "GOOGLE_REDIRECT_URI": "http://localhost:5173/api/v1/auth/google/callback",

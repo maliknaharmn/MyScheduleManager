@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kebijakan Cookie - MySchedule Manager</title>
+  <meta name="description" content="Rincian cookie login, pilihan penyimpanan tema, cache agenda opsional, dan cara mengubah atau menarik izin pada MySchedule Manager.">
+  <link rel="canonical" href="https://myschedulemanager.netlify.app/cookies/">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=my-paper-1">
+  <link rel="stylesheet" href="/src/legal.css">
+  <script type="module" src="/src/legal.tsx"></script>
+</head>
+<body>
+  <a class="skip" href="#isi">Langsung ke isi</a>
+  <header class="legal-header frame">
+    <a class="legal-brand" href="/"><img src="/icons/brand-80.png" alt="" width="40" height="40"><span>MySchedule<span class="brand-suffix"> Manager</span></span></a>
+    <nav aria-label="Dokumen legal"><a href="/privacy/">Privasi</a><a href="/terms/">Ketentuan</a><a href="/cookies/" aria-current="page">Cookie</a></nav>
+  </header>
+  <main class="legal-layout frame" id="isi">
+    <div class="document-heading">
+      <h1>Kebijakan Cookie</h1>
+      <p class="legal-intro">Cookie untuk login berbeda dari pilihan menyimpan tema atau salinan agenda di perangkat.</p>
+      <p class="legal-date">Berlaku mulai <time datetime="2026-10-29">29 Oktober 2026</time></p>
+    </div>
+    <aside class="document-index">
+      <nav aria-label="Isi kebijakan cookie"><h2>Dalam halaman ini</h2><ul>
+        <li><a href="#wajib">Cookie wajib</a></li>
+        <li><a href="#opsional">Penyimpanan opsional</a></li>
+        <li><a href="#pilihan">Mengubah pilihan</a></li>
+        <li><a href="#penyedia">Pelacakan dan penyedia</a></li>
+      </ul></nav>
+      <a class="back-to-app" href="/">Kembali ke aplikasi</a>
+    </aside>
+    <article class="document-body" aria-label="Kebijakan Cookie MySchedule Manager">
+      <p class="document-summary">Penyimpanan tema dan cache agenda tidak aktif sebelum kamu mengizinkannya. Menolak keduanya tidak menghalangi login atau menghapus data akunmu.</p>
+      <section id="wajib">
+        <h2>Cookie wajib</h2>
+        <ul>
+          <li><strong>myschedule_session:</strong> pengenal sesi login, bukan kata sandi atau token akses Google. Umur default hingga 7 hari; dapat berakhir lebih cepat setelah keluar atau pencabutan sesi. HttpOnly, Secure di produksi dan SameSite=Lax.</li>
+          <li><strong>myschedule_oauth:</strong> mengikat percobaan login ke browser untuk keamanan OAuth. Umur hingga 10 menit dan dibersihkan setelah alur login selesai.</li>
+          <li><strong>myschedule_storage:</strong> mengingat pilihan kategori penyimpanan browser selama 180 hari, atau sampai diubah/dihapus. Memuat versi pilihan, dua nilai izin opsional dan waktu kedaluwarsa, bukan isi agenda atau identitas Google.</li>
+        </ul>
+        <p>Cookie ini dibutuhkan agar autentikasi, keamanan dan penghormatan terhadap pilihanmu bekerja. Menonaktifkannya melalui browser dapat membuat login gagal atau pilihan perlu diulang. Cookie pilihan tidak digunakan untuk iklan.</p>
+      </section>
+      <section id="opsional">
+        <h2>Penyimpanan opsional</h2>
+        <ul>
+          <li><strong>Preferensi tema:</strong> cookie myschedule_theme mengingat mode terang/gelap selama 30 hari. Sebelum izin diberikan, perubahan tema hanya ada di memori halaman.</li>
+          <li><strong>Cache agenda:</strong> IndexedDB myschedule-week-cache-v1 menyimpan salinan agenda mingguan menurut akun, termasuk judul, waktu dan status yang ditampilkan. Cache lebih tua dari 30 hari tidak dipakai dan dibersihkan saat penulisan cache berikutnya. Jika situs tidak dibuka, browser dapat tetap menyimpan salinan lama sampai dibersihkan. Cache bukan pengganti database server atau jaminan mode offline.</li>
+        </ul>
+        <p>Kedua opsi tidak aktif sebelum dipilih. Menolak penyimpanan opsional tidak menghalangi login, pemuatan data dari server atau cache sementara di memori. Pada perangkat bersama, sebaiknya jangan menyimpan agenda secara persisten.</p>
+      </section>
+      <section id="pilihan">
+        <h2>Mengubah pilihan</h2>
+        <p>Pada pemberitahuan awal, pilih Hanya yang wajib, Izinkan opsional, atau Pengaturan cookie untuk mengatur kedua kategori secara terpisah. Buka lagi pengaturan dari halaman ini, footer Welcome atau bagian Privasi di perangkat pada Pengaturan akun. Tidak perlu login untuk mengubah pilihan.</p>
+        <div class="cookie-settings-inline" data-cookie-settings><a href="/#cookie-settings">Pengaturan cookie</a></div>
+        <noscript><p>Pengaturan di dalam aplikasi memerlukan JavaScript. Tanpanya, kamu tetap dapat membaca kebijakan ini dan menghapus atau memblokir data situs melalui pengaturan privasi browser. Menghapus data situs juga dapat mengakhiri sesi login.</p></noscript>
+        <p>Pilihan berlaku untuk browser/domain yang sama, termasuk saat berganti akun, bukan otomatis ke perangkat lain. Pilihan disimpan di browser, bukan sebagai rekaman persetujuan di server atau persetujuan terhadap Ketentuan Layanan.</p>
+        <p>Menarik izin menghapus cookie tema atau membersihkan cache agenda yang dikelola aplikasi; tidak menghapus agenda dan catatan pada server. Tema yang sedang tampil dapat tetap dipakai di memori sampai halaman dimuat ulang. Keluar akun membersihkan cache data akun, tetapi tidak menghapus cookie pilihan dan preferensi yang masih diizinkan.</p>
+        <p>Jika browser memblokir cookie pilihan, aplikasi menampilkan kegagalan penyimpanan. Tidak ada izin opsional yang dianggap tersimpan hanya karena tombol diklik. Menghapus data situs melalui browser menghapus pilihan lokal sehingga pemberitahuan dapat muncul kembali. Pilihan ini tidak memengaruhi cookie Google di situs Google.</p>
+      </section>
+      <section id="penyedia">
+        <h2>Pelacakan dan penyedia</h2>
+        <p>Aplikasi tidak mengaktifkan cookie iklan, analytics atau integrasi pemasaran. Netlify, FastAPI Cloud dan Google tetap dapat memproses metadata teknis untuk mengirim halaman, login dan keamanan layanan mereka. Pengaturan browser dan kebijakan penyedia juga berlaku; dokumen ini bukan klaim bahwa seluruh infrastruktur internet tidak memproses metadata.</p>
+        <p>Penanganan data akun dan hak pengguna dijelaskan pada <a href="/privacy/">Kebijakan Privasi</a>. Rincian penyimpanan akan diperbarui jika fitur atau penyedianya berubah, dengan pemberitahuan dan pilihan tambahan bila diperlukan.</p>
+        <div class="contact-block"><p><strong>Pengelola: MySchedule Manager</strong></p><p>Pertanyaan cookie dan privasi: <a href="mailto:maliknahar.mn@gmail.com">maliknahar.mn@gmail.com</a>.</p></div>
+      </section>
+    </article>
+  </main>
+  <footer class="legal-footer frame"><p>MySchedule Manager<span>Agenda dan catatan pribadi.</span></p><nav aria-label="Navigasi penutup"><a href="/privacy/">Kebijakan Privasi</a><a href="/terms/">Ketentuan Layanan</a><span data-cookie-settings><a href="#pilihan">Pengaturan cookie</a></span></nav></footer>
+</body>
+</html>

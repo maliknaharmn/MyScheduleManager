@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
 import type { ServerStatus } from './api/client'
 import { ThemeSwitch, useTheme } from './theme'
+import { CookieNotice, CookieSettingsButton } from './CookiePrivacy'
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><img src="/icons/brand-80.png?v=my-paper-1" width={40} height={40} alt="" /></span><span>MySchedule<span className="brand-suffix"> Manager</span></span></div>
@@ -17,7 +18,7 @@ export function Welcome({ status, error, pending, retry }: { status?: ServerStat
   const canLogin = available && !error && !pending
   const unavailable = !pending && !!status && !available
   const loginError = params.has('error')
-  return <div className="welcome-public">
+  return <><CookieNotice /><div className="welcome-public">
     <header className="welcome-public-header"><Brand /><ThemeSwitch compact /></header>
     <main>
       <section className="welcome-hero" aria-labelledby="welcome-title">
@@ -29,7 +30,8 @@ export function Welcome({ status, error, pending, retry }: { status?: ServerStat
               : <button className="welcome-google" disabled aria-describedby="welcome-login-state"><img src="/icons/google-g.png" alt="" width={20} height={20} />{pending ? 'Memeriksa akses…' : 'Masuk belum tersedia'}</button>}
             {pending && <span id="welcome-login-state" className="sr-only" role="status">Memeriksa layanan masuk.</span>}
             {!pending && (error || unavailable) && <div id="welcome-login-state" className="welcome-service-message" role="alert"><p>{error ? 'Koneksi belum berhasil. Periksa internet, lalu coba lagi.' : 'Layanan masuk sedang tidak tersedia. Silakan coba lagi sebentar.'}</p><button className="text-button" onClick={retry}>Coba lagi</button></div>}
-            {!error && !unavailable && loginError && <p className="welcome-service-message" role="alert">Proses masuk belum selesai. Gunakan akun yang telah diizinkan dan coba kembali.</p>}
+            {!error && !unavailable && loginError && <p className="welcome-service-message" role="alert">Proses masuk belum selesai. Silakan coba kembali dengan akun Google-mu.</p>}
+            <p className="welcome-legal-note">Dengan menggunakan layanan, kamu menyetujui <a href="/terms/">Ketentuan Layanan</a>. Baca cara data ditangani dalam <a href="/privacy/">Kebijakan Privasi</a>.</p>
           </div>
         </div>
         <figure className="welcome-preview"><picture><source type="image/avif" srcSet={`/previews/home-${theme}-720.avif 720w, /previews/home-${theme}-1200.avif 1200w`} sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1060px) calc(100vw - 64px), 636px" /><img src={`/previews/home-${theme}.png`} width={1200} height={820} alt="Contoh MySchedule: kapasitas harian, catatan penting, dan agenda satu minggu." fetchPriority="high" /></picture><figcaption>Contoh tampilan dengan data ilustrasi.</figcaption></figure>
@@ -41,12 +43,12 @@ export function Welcome({ status, error, pending, retry }: { status?: ServerStat
       <section className="welcome-questions" aria-labelledby="welcome-access-title">
         <h2 id="welcome-access-title">Sebelum mulai</h2>
         <div>
-          <details open><summary>Siapa yang bisa masuk?</summary><p id="welcome-access-note">Akses hanya untuk akun Google yang telah diizinkan. Agenda dan catatan terhubung ke akunmu, bukan ke contoh tampilan di halaman ini.</p></details>
+          <details open><summary>Siapa yang bisa masuk?</summary><p id="welcome-access-note">Siapa pun bisa masuk dengan akun Google. Agenda dan catatan tetap pribadi untuk setiap akun, bukan data bersama atau contoh tampilan di halaman ini.</p></details>
           <details><summary>Bagaimana kapasitas dihitung?</summary><p>Free: 0 jam. Light: lebih dari 0 dan kurang dari 6 jam. Medium: 6-10 jam. Busy: lebih dari 10 jam. Agenda tanpa durasi ditandai agar perkiraan kapasitas tidak menyesatkan.</p></details>
           <details><summary>Apakah terhubung ke Google Calendar?</summary><p>Google digunakan untuk masuk. Pengingat Google Calendar dan ekspor .ics belum tersedia. Agenda yang kamu buat tetap tersimpan di MySchedule.</p></details>
         </div>
       </section>
     </main>
-    <footer className="welcome-public-footer"><span>MySchedule Manager</span><span>Agenda dan catatan pribadi.</span></footer>
-  </div>
+    <footer className="welcome-public-footer"><span>MySchedule Manager</span><nav className="legal-links" aria-label="Kebijakan layanan"><a href="/privacy/">Kebijakan Privasi</a><a href="/terms/">Ketentuan Layanan</a><a href="/cookies/">Kebijakan Cookie</a><span id="cookie-settings"><CookieSettingsButton /></span></nav></footer>
+  </div></>
 }

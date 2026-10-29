@@ -6,6 +6,7 @@ import { api, ApiError, type Me } from './api/client'
 import { Button } from './components/ui/button'
 import { Shell } from './ScheduleWorkspace'
 import { forgetCalendar } from './week-cache'
+import { CookieSettingsButton } from './CookiePrivacy'
 
 function Preferences({ me }: { me: Me }) {
   const queryClient = useQueryClient()
@@ -47,6 +48,8 @@ function Preferences({ me }: { me: Me }) {
     </form>
     <div className="divider" /><h3>Google Calendar</h3>
     <p>Pengingat Google Calendar belum tersedia. Agenda dan catatan tetap tersimpan di MySchedule.</p>
+    <div className="divider" /><h3>Privasi di perangkat</h3><p>Kelola cookie tema dan penyimpanan agenda di browser. Pilihan ini tidak menghapus data akun.</p><CookieSettingsButton />
+    <nav className="legal-links settings-legal-links" aria-label="Kebijakan layanan"><a href="/privacy/">Kebijakan Privasi</a><a href="/terms/">Ketentuan Layanan</a><a href="/cookies/">Kebijakan Cookie</a></nav>
   </div>
 }
 
