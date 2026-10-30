@@ -2,7 +2,7 @@
 
 **Status:** React/FastAPI/PostgreSQL berjalan dan dites lokal; agenda serta catatan mendukung tambah/detail/edit/hapus. Catatan memiliki checklist yang dapat dikelola, penyelesaian eksplisit dan buka kembali; tema light/dark serta cache mingguan/bulanan tersedia. **Belum MVP lengkap**—pengingat Google dan pengelolaan prasyarat terhubung belum aktif.
 
-Repository ini public. Secret, `.env`, data lokal, dan direktori perencanaan pribadi `docs/` tidak diikutkan dalam Git. Panduan yang tersedia setelah clone ada di [backend README](backend/README.md) dan [frontend README](frontend/README.md).
+Repository ini public. Secret, `.env`, data lokal, serta dokumen perencanaan dan audit pribadi tetap tidak diikutkan dalam Git. Mulai dari [panduan rilis bergambar](docs/README.md), [backend README](backend/README.md), atau [frontend README](frontend/README.md).
 
 Deployment frontend Netlify dan backend FastAPI Cloud: lihat [DEPLOYMENT.md](DEPLOYMENT.md). Konfigurasi build, proxy same-origin dan SPA fallback berada di `netlify.toml`; pengaturan Google OAuth dan origin backend mengikuti domain frontend produksi.
 
@@ -36,7 +36,7 @@ Jika port 8000 dipakai aplikasi lain, gunakan port 8002 untuk perintah backend d
 
 ## Dokumentasi perencanaan lokal
 
-Daftar berikut hanya tersedia pada workspace perencanaan; direktori `docs/` sengaja tidak dipublikasikan. Path ditampilkan sebagai referensi lokal, bukan tautan yang tersedia setelah clone.
+Hanya [panduan rilis `docs/README.md`](docs/README.md) yang dipublikasikan dari direktori dokumentasi. Daftar berikut tetap hanya tersedia pada workspace perencanaan. Path ditampilkan sebagai referensi lokal, bukan tautan yang tersedia setelah clone.
 
 | Dokumen                                            | Isi                                                          |
 | -------------------------------------------------- | ------------------------------------------------------------ |

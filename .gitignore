@@ -1,5 +1,7 @@
 
-/docs
+# Publish only the release guide; planning and audit documents remain local.
+/docs/*
+!/docs/README.md
 
 # Local configuration and secrets (examples are safe to commit).
 .env
