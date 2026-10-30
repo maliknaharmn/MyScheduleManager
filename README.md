@@ -8,14 +8,14 @@ Kelola agenda, lihat kapasitas harian, dan pantau persiapan melalui catatan sert
 
 ## Tampilan aplikasi
 
-![Contoh Home mode terang: kapasitas harian, catatan penting dengan checklist, dan agenda mingguan.](../frontend/public/previews/home-light.png)
+![Contoh Home mode terang: kapasitas harian, catatan penting dengan checklist, dan agenda mingguan.](frontend/public/previews/home-light.png)
 
 _Tangkapan antarmuka aplikasi dengan data ilustrasi. Nama, tanggal, agenda dan catatan pada gambar bukan data akun pengguna. Gambar ini menunjukkan contoh tampilan, bukan bukti sesi produksi yang sudah berhasil masuk._
 
 <details>
 <summary>Lihat tampilan mode gelap</summary>
 
-![Contoh Home mode gelap dengan kapasitas harian, catatan penting, dan agenda mingguan yang sama.](../frontend/public/previews/home-dark.png)
+![Contoh Home mode gelap dengan kapasitas harian, catatan penting, dan agenda mingguan yang sama.](frontend/public/previews/home-dark.png)
 
 _Mode gelap memakai data ilustrasi yang sama. Sumber dan cara penggunaan aset dijelaskan dalam [catatan aset preview](../frontend/assets-source/preview-README.md)._
 
