@@ -42,7 +42,6 @@ def db_settings():
         auth_database_url=urls[1],
         migration_database_url=urls[2],
         session_secret=SecretStr("test-only-secret-" * 4),
-        allowed_google_emails=["test@example.invalid"],
     )
 
 

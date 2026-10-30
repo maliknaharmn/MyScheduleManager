@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api, ApiError, type Me } from './api/client'
 import type { ListResult, Note, NoteDetail, WeekOverview } from './api/resources'
+import { allowsStorage, useStorageChoice } from './storage-consent'
 
 const DB_NAME = 'myschedule-week-cache-v1'
 const STORE = 'weeks'
@@ -19,7 +20,10 @@ function openDatabase() {
       request.onupgradeneeded = () => {
         request.result.createObjectStore(STORE, { keyPath: 'key' }).createIndex('account', 'account')
       }
-      request.onsuccess = () => resolve(request.result)
+      request.onsuccess = () => {
+        request.result.onversionchange = () => { request.result.close(); database = undefined }
+        resolve(request.result)
+      }
       request.onerror = () => resolve(null)
       request.onblocked = () => resolve(null)
     } catch { resolve(null) }
@@ -28,6 +32,7 @@ function openDatabase() {
 }
 
 async function storedWeeks(account: string): Promise<CachedWeek[]> {
+  if (!allowsStorage('agendaCache')) return []
   const db = await openDatabase()
   if (!db) return []
   return new Promise((resolve) => {
@@ -42,8 +47,9 @@ async function storedWeeks(account: string): Promise<CachedWeek[]> {
 }
 
 async function writeWeeks(account: string, weeks: WeekOverview[], epoch: number) {
+  if (!allowsStorage('agendaCache')) return
   const db = await openDatabase()
-  if (!db || epoch !== generation) return
+  if (!db || epoch !== generation || !allowsStorage('agendaCache')) return
   try {
     const transaction = db.transaction(STORE, 'readwrite')
     transaction.onerror = () => { /* Cache is optional, never block the app on quota errors. */ }
@@ -64,8 +70,17 @@ async function writeWeeks(account: string, weeks: WeekOverview[], epoch: number)
 export async function clearWeekCache() {
   // Invalidates in-flight fetches/hydration BEFORE any asynchronous database work.
   generation++
-  const db = await openDatabase()
-  if (!db) return
+  const db = database ? await database : null
+  if (!db) {
+    // Deletion must not open/create an optional database before consent.
+    await new Promise<void>((resolve) => {
+      try {
+        const request = indexedDB.deleteDatabase(DB_NAME)
+        request.onsuccess = request.onerror = request.onblocked = () => resolve()
+      } catch { resolve() }
+    })
+    return
+  }
   await new Promise<void>((resolve) => {
     try {
       const transaction = db.transaction(STORE, 'readwrite')
@@ -132,11 +147,12 @@ export function splitWeeks(window: WeekOverview): WeekOverview[] {
 
 export function useWeek(me: Me, start: string) {
   const client = useQueryClient()
+  const choice = useStorageChoice()
   useEffect(() => {
     const epoch = generation
     let mounted = true
     void storedWeeks(me.user.id).then((records) => {
-      if (!mounted || epoch !== generation) return
+      if (!mounted || epoch !== generation || !allowsStorage('agendaCache')) return
       for (const record of records) {
         if (record.account !== me.user.id || typeof record.savedAt !== 'number' || record.savedAt < Date.now() - RETENTION || record.value?.timezone !== me.profile.timezone || !Array.isArray(record.value.days) || record.value.days.length !== 7) continue
         const key = weekKey(me, record.value.week_start)
@@ -144,7 +160,7 @@ export function useWeek(me: Me, start: string) {
       }
     })
     return () => { mounted = false }
-  }, [client, me.user.id, me.profile.timezone])
+  }, [client, me.user.id, me.profile.timezone, choice?.agendaCache])
   return useQuery({
     // Browser timers overflow above ~24.8 days; disk, not a timer, retains 30 days.
     queryKey: weekKey(me, start), staleTime: 60_000, gcTime: 24 * 60 * 60 * 1000,

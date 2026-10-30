@@ -10,7 +10,9 @@ const original = (): Schedule => ({
   reminder_offsets_minutes: [15], created_at: '2026-11-16T00:00:00Z', updated_at: '2026-11-16T00:00:00Z',
 })
 
-async function fixture(page: Page) {
+async function fixture(page: Page, remember = true) {
+  // These tests intentionally exercise the opt-in disk cache and persisted theme.
+  if (remember) await page.context().addCookies([{ name: 'myschedule_storage', value: encodeURIComponent(JSON.stringify({ version: 1, preferences: true, agendaCache: true, expiresAt: Date.now() + 180 * 86400000 })), url: 'http://127.0.0.1:4173' }])
   const state = { row: original() as Schedule | null, accountId: account, auth: true, windows: [] as string[], patches: [] as { expected_version: number; tag_ids: string[]; reminder_offsets_minutes: number[]; time: Schedule['time'] }[], deletes: 0, failDelete: false, windowGate: undefined as Promise<void> | undefined }
   await page.context().route('**/api/v1/**', async (route) => {
     const request = route.request()
@@ -77,6 +79,34 @@ async function cachedCount(page: Page) {
     }
   }))
 }
+
+test('authenticated agenda uses memory only until disk storage is explicitly allowed', async ({ page }) => {
+  const state = await fixture(page, false)
+  await page.goto('/?week=2026-11-16&date=2026-11-16')
+  await expect(page.getByText('Rapat perencanaan', { exact: true })).toBeVisible()
+  expect(await page.evaluate(async () => (await indexedDB.databases()).some(db => db.name === 'myschedule-week-cache-v1'))).toBe(false)
+  const requests = state.windows.length
+  await page.getByRole('button', { name: 'Minggu berikutnya' }).click()
+  await expect(page.getByText('0 tampilan agenda dalam minggu ini')).toBeVisible()
+  expect(state.windows).toHaveLength(requests)
+  await page.goto('/settings')
+  const policies = page.getByRole('navigation', { name: 'Kebijakan layanan' })
+  await expect(policies.getByRole('link', { name: 'Kebijakan Privasi', exact: true })).toHaveAttribute('href', '/privacy/')
+  await expect(policies.getByRole('link', { name: 'Ketentuan Layanan', exact: true })).toHaveAttribute('href', '/terms/')
+  await expect(policies.getByRole('link', { name: 'Kebijakan Cookie', exact: true })).toHaveAttribute('href', '/cookies/')
+  await page.getByRole('button', { name: 'Pengaturan cookie' }).click()
+  await page.getByRole('checkbox', { name: 'Simpan agenda di perangkat' }).check()
+  await page.getByRole('button', { name: 'Simpan pilihan' }).click()
+  await page.goto('/?week=2026-11-16&date=2026-11-16')
+  await expect.poll(() => cachedCount(page)).toBe(5)
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Pengaturan cookie' }).click()
+  await page.getByRole('button', { name: 'Hanya yang wajib' }).click()
+  await expect.poll(() => cachedCount(page)).toBe(0)
+  await page.goto('/?week=2026-11-16&date=2026-11-16')
+  await expect(page.getByText('Rapat perencanaan', { exact: true })).toBeVisible()
+  await expect.poll(() => cachedCount(page)).toBe(0)
+})
 
 test('cache is account-scoped and expired entries never render during a network wait', async ({ page }) => {
   const state = await fixture(page)

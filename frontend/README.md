@@ -41,9 +41,9 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 
 - Buka detail agenda → **Edit** atau **Hapus**. Edit dan hapus berlaku untuk seluruh agenda/seri berulang, bukan satu kemunculan. Hapus memerlukan konfirmasi dan memakai soft delete di server. `expected_version` mencegah perubahan perangkat lain tertimpa; konflik mempertahankan draft sampai pengguna memilih memuat versi terbaru.
 - Tag lain, offset pengingat yang sudah tersimpan, zona waktu dan pola jadwal dipertahankan saat edit. Interval timestamp lama tetap memakai representasi aslinya; editor menyediakan input ISO ber-offset untuk interval tersebut.
-- Switch **Mode gelap** terletak setelah Pengaturan; pada navigasi HP berlabel **Tema**. Light adalah default. Cookie `myschedule_theme` menyimpan **preferensi tampilan saja** selama 30 hari; tidak berisi agenda, identitas, token atau kredensial.
+- Switch **Mode gelap** terletak setelah Pengaturan; pada navigasi HP berlabel **Tema**. Light adalah default. Jika kategori preferensi diizinkan, cookie `myschedule_theme` menyimpan **preferensi tampilan saja** selama 30 hari; tidak berisi agenda, identitas, token atau kredensial.
 - Home/Detail hari meminta `/overview/week?week_start=...&weeks=5`: 35 hari dalam satu request dan satu pembacaan rentang database. Empat minggu berikutnya dipasang ke cache, sehingga tombol berikutnya langsung memakai data yang sudah dimuat.
-- Snapshot mingguan disimpan maksimal 30 hari di **IndexedDB per akun dan zona waktu**, bukan cookie. Data ini **tidak dienkripsi oleh aplikasi**; gunakan perangkat/browser pribadi. Sesi harus diverifikasi server sebelum cache dibaca. Snapshot ditampilkan saat reload menunggu jaringan, lalu diperbarui; fresh window 60 detik. Ini bukan login offline atau service worker.
+- Setelah opt-in, snapshot mingguan disimpan di **IndexedDB per akun dan zona waktu**, bukan cookie. Snapshot lebih tua dari 30 hari tidak digunakan, dan dibersihkan saat penulisan berikutnya. Data ini **tidak dienkripsi oleh aplikasi**; gunakan perangkat/browser pribadi. Sesi harus diverifikasi server sebelum cache dibaca. Snapshot ditampilkan saat reload menunggu jaringan, lalu diperbarui; fresh window 60 detik. Ini bukan login offline atau service worker.
 - Create/edit/delete menghapus snapshot kapasitas lama dan memperbarui cache resource terkait. BroadcastChannel menyinkronkan invalidasi antar-tab bila tersedia. Logout dan sesi yang terdeteksi berakhir menghapus cache privat; snapshot kedaluwarsa/akun lain tidak ditampilkan. Jika storage diblokir/penuh, aplikasi tetap memakai memori dan API.
 - `e2e/workspace-features.spec.ts` menguji CRUD, konflik versi, konfirmasi hapus, tema/cookie, prefetch empat minggu berikutnya, cache saat reload, TTL, pemisahan akun, storage diblokir dan pembersihan logout. Ini emulasi Chromium, belum menggantikan pengujian Safari/iPhone fisik.
 
@@ -59,7 +59,7 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 
 - Halaman Welcome berfokus pada manfaat produk dan satu tindakan **Masuk dengan Google**. Status migrasi/database, label build, callback localhost dan panduan `.env` tidak ditampilkan kepada pengunjung; panduan operasional tetap di README backend.
 - Pemeriksaan sesi dan readiness tetap dilakukan. Loading menonaktifkan masuk; kegagalan layanan memakai pesan publik dan tombol **Coba lagi**, bukan pesan internal server. Parameter error OAuth tidak dipantulkan ke halaman.
-- Akses tetap dibatasi akun Google yang sudah diizinkan. Halaman ini tidak membuka pendaftaran umum, tidak mengubah autentikasi, dan tidak mengklaim pengingat Calendar/ekspor .ics sudah tersedia.
+- Semua pengguna dapat masuk dengan akun Google; akun baru dibuat otomatis setelah identitas Google terverifikasi. Agenda dan catatan tetap privat per akun. Google OAuth harus memakai Audience **External / In production** agar tidak dibatasi test user oleh Google. Pengingat Calendar/ekspor .ics belum tersedia.
 - Preview adalah tangkapan UI aplikasi dengan data sintetis yang diberi label. Tersedia AVIF responsif 720/1200px dengan PNG fallback, mengikuti tema. Sumber aset tercatat di `assets-source/preview-README.md`.
 - Kode workspace/editor dipisahkan dan dimuat setelah sesi terverifikasi. Jika pemuatan modul gagal, pengguna mendapat tindakan muat ulang. Lighthouse lokal bukan pengukuran produksi atau jaminan Core Web Vitals.
 - Prinsip panduan desain yang diberikan pemilik dirangkum secara kontekstual pada `AGENTS.md`, untuk seluruh frontend tanpa mengganti stack, brand, atau alur data yang sudah bekerja.
@@ -71,3 +71,24 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 - Link eksplisit `?week=...&date=...` tetap bisa dipakai untuk meninjau tanggal lain. Tombol **Hari ini** kembali ke minggu/tanggal sekarang dan membersihkan pilihan eksplisit agar mengikuti hari berikutnya otomatis.
 - Klik blok hari/angka tanggal di Agenda Mingguan untuk memilih hari dan membuka **Tambah agenda** atau **Lihat detail hari**. Form tambah agenda memakai tanggal yang diklik, termasuk pada hari yang sudah memiliki agenda. Escape/tutup mengembalikan fokus ke tombol tanggal.
 - `e2e/home-today.spec.ts` menguji zona profil yang berbeda dari browser, reload, pergantian Minggu-Senin, resume perangkat, keyboard dan tanggal form. `e2e/welcome.spec.ts` menguji state publik dan tema tanpa bypass login aplikasi.
+
+## Pilihan cookie dan penyimpanan perangkat
+
+- Cookie sesi/OAuth tetap wajib. `myschedule_storage` mencatat pilihan kategori selama 180 hari, tanpa identitas Google atau isi agenda. Ini bukan persetujuan terhadap ToS dan bukan audit consent di server.
+- Preferensi tema dan cache agenda IndexedDB **mati sebelum opt-in**. Tema tetap dapat diubah di memori; prefetch mingguan dan cache query di memori tetap bekerja tanpa izin penyimpanan persisten.
+- Pemberitahuan awal ada di Welcome. **Pengaturan cookie** dapat dibuka lagi dari footer Welcome, halaman legal, atau bagian **Privasi di perangkat** pada Pengaturan akun. Tidak ada kategori iklan/analytics karena aplikasi tidak memasangnya.
+- Mematikan opsi membersihkan cookie tema atau cache agenda lokal, termasuk cache lama sebelum ada kontrol consent. Data server tidak dihapus. Pilihan berlaku per browser/domain (bukan per akun), disinkronkan antar-tab, dan gagal tertutup bila penyimpanan pilihan diblokir.
+- Pilihan tema yang tidak diizinkan tidak dibaca saat bootstrap. Cache disk tidak dibaca/ditulis tanpa izin; hasil fetch/hydration yang masih berjalan memeriksa ulang izin sebelum menyimpan/memulihkan data.
+- Cookie tema berumur 30 hari. Cache lebih tua dari 30 hari tidak digunakan; pembersihan usia cache berjalan saat penulisan berikutnya, bukan timer yang menjamin penghapusan saat situs tidak dibuka. Keluar/penarikan izin membersihkan cache yang dikelola aplikasi.
+- `storage-consent.test.ts` dan `e2e/cookie-privacy.spec.ts` menguji default, penolakan, izin per kategori, penarikan, keyboard/fokus, tab dan browser yang memblokir cookie. Tes workspace secara eksplisit mengizinkan disk saat menguji fitur cache persisten.
+
+## Halaman legal rilis
+
+Pemilik menyetujui publikasi dengan identitas **MySchedule Manager**, kontak **maliknahar.mn@gmail.com**, dan penanganan permintaan data/penghapusan akun secara manual. Tanggal berlaku: **29 Oktober 2026**. Penghapusan agenda/catatan masih soft-delete; tidak ada janji penghapusan cadangan seketika atau persetujuan ToS yang tercatat di server.
+
+- Sumber rilis: `privacy/index.html`, `terms/index.html`, `cookies/index.html`. Ketiganya merupakan entry HTML Vite terpisah, bukan route React yang memerlukan login. Build menghasilkan `dist/privacy/index.html`, `dist/terms/index.html`, `dist/cookies/index.html`.
+- `src/legal.css` menyediakan layout dokumen, daftar isi, mode terang/gelap dan cetak. `src/legal.tsx` hanya meningkatkan kontrol cookie memakai komponen/pilihan yang sama dengan aplikasi, tanpa request sesi/API. Tanpa JavaScript, seluruh isi dan tautan tetap terbaca; instruksi browser disediakan untuk pengelolaan data situs.
+- Welcome, dialog cookie dan Pengaturan akun menautkan dokumen rilis. Navigasi ke dokumen memakai anchor biasa agar HTML statis benar-benar dimuat.
+- Jalankan `npm run legal:preview`, lalu buka `http://127.0.0.1:4180/privacy/`. Perintah ini membangun versi produksi dahulu. Jalankan `npm run build` sebelum `npm run legal:test` untuk memeriksa output, tautan/aset, isi rilis dan route allowlist preview.
+- `e2e/legal-release.spec.ts` menguji tiga kebijakan tanpa JavaScript/API, anchor daftar isi, kontak, tautan Welcome saat backend gagal, serta pilihan cookie yang konsisten lintas halaman.
+- `legal-drafts/` hanya arsip tinjauan lama, tidak diterbitkan dan bukan sumber rilis. Halaman ini tidak menjamin kepatuhan hukum atau persetujuan Google.

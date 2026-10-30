@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     session_secret: SecretStr | None = None
     cookie_secure: bool = False
     session_ttl_seconds: int = 60 * 60 * 24 * 7
-    allowed_google_emails: list[str] = []
     google_client_id: str = ""
     google_client_secret: SecretStr = SecretStr("")
     google_redirect_uri: str = "http://localhost:5173/api/v1/auth/google/callback"
@@ -58,7 +57,6 @@ class Settings(BaseSettings):
         return bool(
             self.google_client_id
             and self.google_client_secret.get_secret_value()
-            and self.allowed_google_emails
             and self.session_secret
             and len(self.session_secret.get_secret_value()) >= 32
             and self.database_url

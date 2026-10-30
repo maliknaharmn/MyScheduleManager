@@ -35,7 +35,7 @@ test('unavailable login uses public copy without developer diagnostics', async (
 test('public help explains actual access and Calendar limitations, not local configuration', async () => {
   const client = setup()
   await screen.findByRole('button', { name: 'Masuk belum tersedia' })
-  expect(screen.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  expect(screen.getByText(/Siapa pun bisa masuk dengan akun Google/)).toBeVisible()
   await userEvent.click(screen.getByText('Apakah terhubung ke Google Calendar?'))
   expect(screen.getByText(/Pengingat Google Calendar dan ekspor .ics belum tersedia/)).toBeVisible()
   expect(screen.queryByText(/localhost:5173/)).not.toBeInTheDocument()
@@ -50,7 +50,7 @@ test('network errors are not rendered as an empty private calendar', async () =>
   client.clear()
 })
 
-test('ready service has one real Google login link and does not claim unrestricted signups', async () => {
+test('ready service offers public Google sign-in while keeping each account private', async () => {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/me')
     ? new Response(JSON.stringify({ error: { code: 'AUTH_REQUIRED' } }), { status: 401 })
     : new Response(JSON.stringify({ data: { ...status, google_login_configured: true }, meta: { request_id: 'test' } }))))
@@ -58,7 +58,7 @@ test('ready service has one real Google login link and does not claim unrestrict
   const login = await screen.findByRole('link', { name: 'Masuk dengan Google' })
   expect(login).toHaveAttribute('href', '/api/v1/auth/google/start?return_to=/')
   expect(screen.getAllByRole('link', { name: 'Masuk dengan Google' })).toHaveLength(1)
-  expect(screen.getByText(/Akses hanya untuk akun Google yang telah diizinkan/)).toBeVisible()
+  expect(screen.getByText(/Siapa pun bisa masuk dengan akun Google/)).toHaveTextContent('Agenda dan catatan tetap pribadi untuk setiap akun')
   client.clear()
 })
 

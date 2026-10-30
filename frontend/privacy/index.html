@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kebijakan Privasi - MySchedule Manager</title>
+  <meta name="description" content="Cara MySchedule Manager menggunakan identitas Google, menyimpan agenda dan catatan, serta menangani permintaan data dan penghapusan akun.">
+  <link rel="canonical" href="https://myschedulemanager.netlify.app/privacy/">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=my-paper-1">
+  <link rel="stylesheet" href="/src/legal.css">
+  <script type="module" src="/src/legal.tsx"></script>
+</head>
+<body>
+  <a class="skip" href="#isi">Langsung ke isi</a>
+  <header class="legal-header frame">
+    <a class="legal-brand" href="/"><img src="/icons/brand-80.png" alt="" width="40" height="40"><span>MySchedule<span class="brand-suffix"> Manager</span></span></a>
+    <nav aria-label="Dokumen legal"><a href="/privacy/" aria-current="page">Privasi</a><a href="/terms/">Ketentuan</a><a href="/cookies/">Cookie</a></nav>
+  </header>
+  <main class="legal-layout frame" id="isi">
+    <div class="document-heading">
+      <h1>Kebijakan Privasi</h1>
+      <p class="legal-intro">Cara kami menangani identitas Google, agenda, catatan, dan penyimpanan di perangkatmu.</p>
+      <p class="legal-date">Berlaku mulai <time datetime="2026-10-29">29 Oktober 2026</time></p>
+    </div>
+    <aside class="document-index">
+      <nav aria-label="Isi kebijakan"><h2>Dalam halaman ini</h2><ul>
+        <li><a href="#data">Data yang diproses</a></li>
+        <li><a href="#penggunaan">Tujuan dan akses data</a></li>
+        <li><a href="#penyedia">Penyedia dan keamanan</a></li>
+        <li><a href="#hak">Penyimpanan dan hakmu</a></li>
+        <li><a href="#kontak">Perubahan dan kontak</a></li>
+      </ul></nav>
+      <a class="back-to-app" href="/">Kembali ke aplikasi</a>
+    </aside>
+    <article class="document-body" aria-label="Kebijakan Privasi MySchedule Manager">
+      <p class="document-summary">MySchedule Manager mengelola layanan ini. Google digunakan untuk masuk, bukan untuk membaca Gmail atau Google Calendar. Agenda dan catatan tidak dibuka untuk pengguna lain.</p>
+      <section id="data">
+        <h2>Data yang diproses</h2>
+        <ul>
+          <li><strong>Identitas Google:</strong> pengenal akun Google, alamat email, status verifikasi email saat login, dan nama profil jika tersedia. Pengenal akun, email dan nama disimpan untuk membuat akun serta menghubungkan data dengan pemiliknya. Kami tidak meminta atau menyimpan kata sandi Google.</li>
+          <li><strong>Data yang kamu isi:</strong> judul, waktu, zona waktu, kategori, status dan label agenda; isi dan target catatan; checklist, status penyelesaian, preferensi pengingat serta waktu pembuatan dan perubahan.</li>
+          <li><strong>Data akun dan keamanan:</strong> preferensi zona waktu dan jam pengingat, informasi sesi, serta pengenal permintaan untuk membantu keamanan dan pemecahan masalah.</li>
+          <li><strong>Data perangkat:</strong> cookie keamanan dan pilihan penyimpanan. Jika diizinkan, cookie tema dan salinan cache agenda di browser. Penyedia hosting dapat memproses metadata jaringan, seperti alamat IP dan informasi browser, untuk mengirim respons dan menjaga layanan.</li>
+        </ul>
+        <p>Aplikasi tidak menggunakan foto profil Google sebagai avatar dan tidak meminta akses Gmail, kontak, Drive atau Google Calendar. Login hanya meminta izin identitas: openid, email dan profile. Token identitas Google dipakai untuk verifikasi login; kode login dan token Google tidak dimasukkan ke penyimpanan browser aplikasi.</p>
+      </section>
+      <section id="penggunaan">
+        <h2>Tujuan dan akses data</h2>
+        <p>Data dipakai untuk memverifikasi login, membuat akun, menampilkan dan mengubah agenda/catatan milikmu, menghitung kapasitas waktu, menjaga sesi, serta mengoperasikan dan mengamankan layanan. Data antarakun dipisahkan; pendaftaran terbuka tidak membuat agenda atau catatan menjadi publik.</p>
+        <p>Data Google tidak dijual, diserahkan kepada broker data, dipakai untuk iklan personal, penilaian kredit, pengawasan, atau pelatihan model AI. Aplikasi tidak memasang analytics atau cookie periklanan. Pengelola dapat memerlukan akses terbatas untuk bantuan yang kamu minta, keamanan, penanganan penyalahgunaan atau kewajiban hukum; bukan untuk membaca agenda sebagai kegiatan rutin.</p>
+        <p>Pengingat Google Calendar dan ekspor .ics belum tersedia. Preferensi pengingat yang tersimpan tidak berarti notifikasi akan dikirim. Jika fitur baru membutuhkan data atau izin Google tambahan, kami menjelaskannya sebelum digunakan dan meminta persetujuan baru bila diperlukan.</p>
+        <p>Penggunaan dan penerusan informasi yang diterima dari Google mengikuti <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, termasuk persyaratan Limited Use yang berlaku. Kebijakan ini tidak menyatakan bahwa Google telah memverifikasi atau mendukung aplikasi.</p>
+      </section>
+      <section id="penyedia">
+        <h2>Penyedia dan keamanan</h2>
+        <p>Google menangani autentikasi. Netlify mengirim antarmuka web dan meneruskan permintaan API ke FastAPI Cloud. Database PostgreSQL di Neon menyimpan data aplikasi. Data yang diperlukan untuk menjalankan layanan diproses melalui penyedia tersebut sesuai fungsi masing-masing. Pemrosesan dapat berlangsung di luar negara tempatmu tinggal; kami tidak menjanjikan bahwa seluruh data berada di Indonesia.</p>
+        <p>Pengamanan mencakup HTTPS di produksi, cookie sesi HttpOnly/Secure, pemeriksaan sesi dan CSRF, pembatasan kepemilikan data, dan peran database terbatas. Tidak ada sistem yang bisa menjamin keamanan mutlak. Jangan menyimpan kata sandi, secret, data pembayaran, atau informasi sangat sensitif yang tidak diperlukan untuk menyusun jadwal.</p>
+        <p>Informasi dapat diungkapkan jika diwajibkan hukum atau diperlukan secara sah untuk menangani insiden keamanan. Jika terjadi perubahan pengelola atau penggunaan data, kami memberikan pemberitahuan dan meminta persetujuan tambahan sesuai kewajiban yang berlaku.</p>
+      </section>
+      <section id="hak">
+        <h2>Penyimpanan dan hakmu</h2>
+        <p>Agenda, catatan dan profil disimpan selama akun digunakan dan selama diperlukan untuk menyediakan layanan atau memenuhi kewajiban yang sah. Tidak ada janji bahwa akun tidak aktif akan otomatis dihapus setelah jangka waktu tertentu. Untuk meminta penghapusan akun atau data, hubungi kami melalui email di bawah.</p>
+        <p><strong>Tombol Hapus pada agenda/catatan memakai penghapusan lunak:</strong> data tidak tampil dalam daftar aktif, tetapi baris data dan salinan cadangan belum langsung dihapus permanen. Keluar dari akun mengakhiri sesi dan membersihkan cache lokal yang dikelola aplikasi; bukan menghapus data akun dari server.</p>
+        <p>Kamu dapat meninjau dan mengubah data melalui aplikasi serta mencabut akses Google melalui <a href="https://myaccount.google.com/connections">pengaturan koneksi akun Google</a>. Pencabutan akses Google tidak dengan sendirinya menghapus akun, data tersimpan, atau setiap sesi MySchedule yang sudah terbentuk. Keluar dari MySchedule juga, lalu hubungi kami untuk permintaan penghapusan.</p>
+        <p>Belum ada tombol penghapusan akun atau ekspor data penuh mandiri. Untuk akses/salinan data, koreksi, atau penghapusan akun, kirim email dari alamat Google yang terhubung ke akunmu ke <a href="mailto:maliknahar.mn@gmail.com?subject=Permintaan%20data%20MySchedule%20Manager">maliknahar.mn@gmail.com</a>. Sebutkan jenis permintaan dan data yang dimaksud, tanpa mengirim kata sandi, kode OTP atau token Google.</p>
+        <p>Permintaan ditangani manual. Kami dapat meminta verifikasi kepemilikan yang wajar, meninjau permintaan sesuai hukum yang berlaku, dan menginformasikan hasil atau alasan pembatasan/penundaan. Data tertentu dapat dipertahankan bila dibutuhkan untuk keamanan atau kewajiban hukum. Salinan cadangan tidak selalu terhapus bersamaan dengan data aktif; kami tidak menjanjikan penghapusan seluruh cadangan seketika atau jadwal retensi cadangan tertentu.</p>
+        <p>Rincian cookie, batas umur cache dan pilihan penyimpanan ada di <a href="/cookies/">Kebijakan Cookie</a>. Menolak penyimpanan opsional tidak menonaktifkan fungsi utama akun.</p>
+      </section>
+      <section id="kontak">
+        <h2>Perubahan dan kontak</h2>
+        <p>Layanan ditujukan untuk pengelolaan jadwal pribadi oleh pengguna yang dapat memberikan persetujuan yang sah, bukan sebagai layanan khusus anak. Jika kamu meyakini data anak diproses tanpa izin yang diperlukan, hubungi kami agar dapat ditinjau dan ditangani.</p>
+        <p>Perubahan kebijakan menampilkan tanggal berlaku. Perubahan penting pada penggunaan data akan diberitahukan melalui aplikasi; perubahan tujuan atau akses data Google memerlukan persetujuan tambahan bila diwajibkan.</p>
+        <div class="contact-block"><p><strong>Pengelola: MySchedule Manager</strong></p><p>Pertanyaan privasi dan permintaan data: <a href="mailto:maliknahar.mn@gmail.com">maliknahar.mn@gmail.com</a>.</p></div>
+      </section>
+    </article>
+  </main>
+  <footer class="legal-footer frame"><p>MySchedule Manager<span>Agenda dan catatan pribadi.</span></p><nav aria-label="Navigasi penutup"><a href="/terms/">Ketentuan Layanan</a><a href="/cookies/">Kebijakan Cookie</a><span data-cookie-settings><a href="/cookies/#pilihan">Pengaturan cookie</a></span></nav></footer>
+</body>
+</html>

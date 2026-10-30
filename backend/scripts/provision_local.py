@@ -77,7 +77,6 @@ def main():
     lines += [
         f"SESSION_SECRET={secrets.token_urlsafe(48)}",
         "COOKIE_SECURE=false",
-        "ALLOWED_GOOGLE_EMAILS=[]",
         "GOOGLE_CLIENT_ID=",
         "GOOGLE_CLIENT_SECRET=",
         "GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback",

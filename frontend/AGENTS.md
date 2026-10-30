@@ -17,6 +17,7 @@ Use the owner's supplied `taste-SKILL.md` as the design reference. Apply its rul
 ## Verify
 
 - Test loading, unavailable, retry, OAuth error and ready states. Never show a private workspace before session verification.
+- Google sign-in is public to all verified Google accounts, not an email allowlist. Keep agenda and note ownership private per account, and retain disabled-account, session and CSRF checks.
 - Home defaults to today in the profile timezone. Intentional week/date deep links remain supported; the date below the greeting always names today. Day actions use the clicked date, not the browser date.
 - Preserve optimistic-version guards and draft retention. Mutations must not be automatically retried.
 - Run build, unit tests and desktop/mobile Playwright. Inspect the production build at desktop/tablet/mobile in both themes; open the screenshots. Keep audit fixtures, screenshots and reports local. Do not claim Lighthouse or real Google/Safari testing unless actually run.

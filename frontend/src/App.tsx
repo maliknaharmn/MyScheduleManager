@@ -4,6 +4,7 @@ import { api, fetchMe, type ServerStatus } from './api/client'
 import { ThemeProvider } from './theme'
 import { forgetCalendar } from './week-cache'
 import { Welcome, SessionLoading } from './Welcome'
+import { CookiePrivacy } from './CookiePrivacy'
 
 const Workspace = lazy(() => import('./Workspace'))
 
@@ -17,7 +18,7 @@ class WorkspaceBoundary extends Component<{ children: ReactNode }, { failed: boo
 }
 
 export function App() {
-  return <ThemeProvider><AppContent /></ThemeProvider>
+  return <ThemeProvider><CookiePrivacy /><AppContent /></ThemeProvider>
 }
 
 function AppContent() {

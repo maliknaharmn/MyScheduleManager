@@ -58,7 +58,7 @@ Frontend Vite memproxy `/api` dan `/health` ke backend, sehingga cookie dan CSRF
 - Delete memakai soft delete dan versi, menghilangkan catatan dari seluruh daftar/detail. Calendar mapping lama menahan edit/delete/complete/reopen; tautan prasyarat menahan delete/reopen dan catatan yang memiliki prasyarat menahan complete sampai pengelolaan relasi tersedia.
 - `/docs` dan `/openapi.json` tersedia hanya non-production.
 
-Login Google hanya aktif setelah OAuth/allowlist/secret/database dikonfigurasi. Tidak ada endpoint dev-login, fake user, atau bypass auth. Callback flow dites menggunakan provider mock; Google nyata belum diuji. Handshake state/nonce/PKCE saat ini tersimpan sekali pakai di memori proses dengan TTL dan browser binding: restart gagal tertutup. **Jalankan satu API worker saja untuk fase ini; multi-worker/replica memerlukan shared handshake storage terlebih dahulu.**
+Login Google terbuka untuk semua akun Google dengan email terverifikasi setelah OAuth/secret/database dikonfigurasi. Akun, profil dan tag awal dibuat otomatis saat login pertama; agenda dan catatan tetap privat per pengguna melalui owner scope dan RLS. Tidak ada allowlist email, endpoint dev-login, fake user, atau bypass auth. Akun yang dinonaktifkan tetap ditolak. Callback flow dites menggunakan provider mock; Google nyata belum diuji. Handshake state/nonce/PKCE saat ini tersimpan sekali pakai di memori proses dengan TTL dan browser binding: restart gagal tertutup. **Jalankan satu API worker saja untuk fase ini; multi-worker/replica memerlukan shared handshake storage terlebih dahulu.**
 
 Alur baru memakai sesi pemilik akun, CSRF untuk mutasi, dan aturan kapasitas domain (durasi bertumpuk dihitung sekali; agenda tanpa durasi membuat hasil parsial). Pengingat yang disimpan belum membuat notifikasi. Penyelesaian catatan dengan prasyarat atau Calendar mapping lama ditahan sampai lifecycle pengingat selesai dibangun.
 
@@ -84,17 +84,18 @@ Lock Python mem-pin versi (tanpa hash artefak). Ekspansi hash semua distribusi s
 
 Buat OAuth client **Web application** di Google Cloud, dengan origin `http://localhost:5173` dan redirect URI persis `http://localhost:5173/api/v1/auth/google/callback`. Jika consent masih mode Testing, tambahkan akun uji pada Google Auth Platform → Audience → Test users.
 
+Untuk akses publik, buka **Google Auth Platform → Audience**, pilih user type **External** dan publikasikan ke **In production**. Mode **Internal** hanya menerima akun organisasi; mode **Testing** masih dibatasi test users oleh Google meskipun aplikasi tidak lagi memakai allowlist. Lengkapi branding, domain dan verifikasi yang diminta Google; pada hosting publik, daftarkan origin/redirect HTTPS produksi yang persis sesuai konfigurasi server. Perubahan kode ini tidak otomatis mengubah pengaturan Google Cloud.
+
 Isi `backend/.env` secara lokal (placeholder berikut bukan kredensial valid):
 
 ```dotenv
 GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID
 GOOGLE_CLIENT_SECRET=YOUR_WEB_CLIENT_SECRET
-ALLOWED_GOOGLE_EMAILS=["your-account@example.invalid"]
 APP_ORIGIN=http://localhost:5173
 GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
 ```
 
-Allowlist wajib array JSON dengan tanda kutip ganda. Pertahankan session secret dan koneksi database yang dibuat saat setup; jangan menggantinya dengan placeholder. Restart backend setelah mengubah `.env`. Login hanya meminta identitas Google; Calendar perlu consent terpisah dan flow produksinya belum diaktifkan.
+`ALLOWED_GOOGLE_EMAILS` tidak lagi dipakai; hapus variabel lama dari konfigurasi deployment bila masih ada. Nilai lama tidak membatasi login atau sesi. Pertahankan session secret dan koneksi database yang dibuat saat setup; jangan menggantinya dengan placeholder. Restart/redeploy backend setelah memperbarui kode atau konfigurasi. Login hanya meminta identitas Google; Calendar perlu consent terpisah dan flow produksinya belum diaktifkan.
 
 Tidak ada kredensial Google yang dibutuhkan GitHub Actions: tes callback memakai provider mock, tes Calendar memakai transport simulasi, dan PostgreSQL CI terpisah dengan password ephemeral khusus CI. **Jangan upload `.env` lokal sebagai artefak CI atau menambahkan Google secret ke frontend.**
 

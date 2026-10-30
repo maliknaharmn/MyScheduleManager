@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "legal:preview": "npm run build && node scripts/preview-legal.mjs",
+    "legal:test": "node --test scripts/legal-release.test.mjs",
     "api:types": "openapi-typescript ../backend/openapi.json -o src/api/generated.ts"
   },
   "dependencies": {

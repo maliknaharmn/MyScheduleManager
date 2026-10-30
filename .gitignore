@@ -1,5 +1,7 @@
 
-/docs
+# Publish only the release guide; planning and audit documents remain local.
+/docs/*
+!/docs/README.md
 
 # Local configuration and secrets (examples are safe to commit).
 .env
@@ -45,3 +47,11 @@ test-results/
 *.tsbuildinfo
 .DS_Store
 .neon
+
+# Local deployment linkage and installed agent tooling (never publish credentials).
+.netlify/
+/.agents/
+/skills-lock.json
+
+# Superseded local review drafts; release policies have their own HTML entries.
+/frontend/legal-drafts/

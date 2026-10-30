@@ -65,7 +65,33 @@ async def test_google_authorization_uses_pkce_nonce_and_identity_scopes_only():
     assert "calendar" not in params["scope"][0]
 
 
-@pytest.mark.parametrize("bad_claim", [{"nonce": "wrong"}, {"email_verified": False}, {"sub": ""}])
+@pytest.mark.parametrize("legacy_allowlist", ["[]", '["former-owner@example.invalid"]'])
+def test_public_login_readiness_ignores_legacy_email_allowlist(monkeypatch, legacy_allowlist):
+    monkeypatch.setenv("ALLOWED_GOOGLE_EMAILS", legacy_allowlist)
+    settings = Settings(
+        _env_file=None,
+        app_env="test",
+        google_client_id="test-client",
+        google_client_secret="test-secret",
+        session_secret="s" * 48,
+        database_url="postgresql://app:fake@localhost/myschedule_test",
+        auth_database_url="postgresql://auth:fake@localhost/myschedule_test",
+    )
+    assert settings.google_login_configured
+    for field in (
+        "google_client_id",
+        "google_client_secret",
+        "session_secret",
+        "database_url",
+        "auth_database_url",
+    ):
+        incomplete = Settings(**{**settings.model_dump(), field: ""}, _env_file=None)
+        assert not incomplete.google_login_configured
+
+
+@pytest.mark.parametrize(
+    "bad_claim", [{"nonce": "wrong"}, {"email_verified": False}, {"sub": ""}, {"email": ""}]
+)
 async def test_google_identity_nonce_verified_email_and_subject_are_required(
     monkeypatch, bad_claim
 ):

@@ -79,7 +79,6 @@ async def synthetic_account(runtime: dict, subject: str, session_secret: str):
         database_url=runtime["DATABASE_URL"],
         auth_database_url=runtime["AUTH_DATABASE_URL"],
         session_secret=session_secret,
-        allowed_google_emails=["neon-e2e@example.invalid"],
     )
     database = Database(settings)
     try:
@@ -131,7 +130,6 @@ def http_crud(runtime: dict, token: str, session_secret: str):
             "APP_ENV": "test",
             "APP_ORIGIN": origin,
             "SESSION_SECRET": session_secret,
-            "ALLOWED_GOOGLE_EMAILS": '["neon-e2e@example.invalid"]',
             "COOKIE_SECURE": "false",
             "GOOGLE_CLIENT_ID": "",
             "GOOGLE_CLIENT_SECRET": "",

@@ -198,15 +198,9 @@ class Identity:
     session_hash: str
 
 
-def assert_allowed_email(email: str, settings: Settings) -> None:
-    if email.casefold() not in {e.casefold() for e in settings.allowed_google_emails}:
-        raise ApiError(403, "ACCOUNT_NOT_ALLOWED", "Akun ini belum diizinkan mengakses aplikasi.")
-
-
 async def create_login(
     database: Database, settings: Settings, identity: GoogleIdentity, old_token: str | None
 ) -> str:
-    assert_allowed_email(identity.email, settings)
     token = secrets.token_urlsafe(48)
     async with database.session(auth=True) as session:
         user = await session.scalar(
@@ -306,7 +300,6 @@ async def current_identity(
         if row is None:
             raise ApiError(401, "AUTH_REQUIRED", "Sesi berakhir. Silakan login kembali.")
         login, user = row
-        assert_allowed_email(user.email, request.app.state.settings)
         return Identity(user.id, login.id, user.email, user.display_name, login.token_hash)
 
 
