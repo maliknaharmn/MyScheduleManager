@@ -19,7 +19,7 @@ npm run build
 npm run test:e2e
 ```
 
-E2E memakai port khusus 4173/8001 dan viewport desktop/mobile. Tes authenticated Home memock respons API; tes lainnya memakai backend lokal. `npx playwright install chromium` diperlukan jika browser Playwright belum tersedia; untuk memakai Chrome lokal, `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`. Emulasi viewport **bukan** pengujian iPhone/Safari atau Google Calendar nyata.
+`npm run test:e2e` membangun output produksi dahulu, lalu memakai Vite preview pada port 4173 dan backend test pada 8001, dengan viewport desktop/mobile. Tes authenticated Home memock respons API; tes lainnya memakai backend lokal. `npx playwright install chromium` diperlukan jika browser Playwright belum tersedia; untuk memakai Chrome lokal, `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`. Emulasi viewport **bukan** pengujian iPhone/Safari atau Google Calendar nyata.
 
 Schema API publik dihasilkan dari OpenAPI FastAPI. Tipe respons fitur baru sementara disusun di `src/api/resources.ts` mengikuti schema tersebut. Dari `backend/` ekspor schema, lalu di folder ini regenerasi tipe OpenAPI:
 
@@ -58,6 +58,9 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 ## Halaman masuk publik
 
 - Halaman Welcome berfokus pada manfaat produk dan satu tindakan **Masuk dengan Google**. Status migrasi/database, label build, callback localhost dan panduan `.env` tidak ditampilkan kepada pengunjung; panduan operasional tetap di README backend.
+- Judul utama dan brand mobile menampilkan **MySchedule Manager**. Penjelasan fungsi, penggunaan identitas Google, pengelola/kontak dan kebijakan tersedia dalam HTML awal, bukan hanya `<noscript>` atau setelah pemeriksaan sesi. Tidak ada klaim bahwa pengingat Calendar sudah tersedia.
+- Setelah `vite build`, `scripts/prerender-homepage.mjs` merender komponen `Welcome` yang sama melalui `src/prerender.tsx` ke `dist/index.html`. Proses ini anonim, tanpa API, cookie, sesi atau data akun. Jangan melewati script tersebut saat deploy. Konten statis tidak menampilkan kontrol cookie/tema yang belum aktif dan tidak mengklaim layanan masuk siap.
+- Client memakai `createRoot`, bukan hydration: konten publik statis diganti dengan state sesi, tema dan consent browser. Tidak ada salinan teks homepage kedua yang harus disinkronkan. Informasi publik tetap tampil saat `/me` tertunda/gagal; workspace dan cache privat tetap memerlukan identitas yang terverifikasi.
 - Pemeriksaan sesi dan readiness tetap dilakukan. Loading menonaktifkan masuk; kegagalan layanan memakai pesan publik dan tombol **Coba lagi**, bukan pesan internal server. Parameter error OAuth tidak dipantulkan ke halaman.
 - Semua pengguna dapat masuk dengan akun Google; akun baru dibuat otomatis setelah identitas Google terverifikasi. Agenda dan catatan tetap privat per akun. Google OAuth harus memakai Audience **External / In production** agar tidak dibatasi test user oleh Google. Pengingat Calendar/ekspor .ics belum tersedia.
 - Preview adalah tangkapan UI aplikasi dengan data sintetis yang diberi label. Tersedia AVIF responsif 720/1200px dengan PNG fallback, mengikuti tema. Sumber aset tercatat di `assets-source/preview-README.md`.
@@ -76,7 +79,7 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 
 - Cookie sesi/OAuth tetap wajib. `myschedule_storage` mencatat pilihan kategori selama 180 hari, tanpa identitas Google atau isi agenda. Ini bukan persetujuan terhadap ToS dan bukan audit consent di server.
 - Preferensi tema dan cache agenda IndexedDB **mati sebelum opt-in**. Tema tetap dapat diubah di memori; prefetch mingguan dan cache query di memori tetap bekerja tanpa izin penyimpanan persisten.
-- Pemberitahuan awal ada di Welcome. **Pengaturan cookie** dapat dibuka lagi dari footer Welcome, halaman legal, atau bagian **Privasi di perangkat** pada Pengaturan akun. Tidak ada kategori iklan/analytics karena aplikasi tidak memasangnya.
+- Pemberitahuan awal berupa bar non-modal di bawah layar Welcome, tanpa backdrop atau pergeseran hero. Ruang di akhir halaman mengikuti tinggi bar agar footer dapat digulir ke atasnya, termasuk setelah resize atau pesan error. Tombol tutup hanya menyembunyikan bar untuk tampilan saat ini, bukan menyimpan izin; penyimpanan opsional tetap mati. **Pengaturan cookie** dapat dibuka lagi dari footer Welcome, halaman legal, atau bagian **Privasi di perangkat** pada Pengaturan akun. Tidak ada kategori iklan/analytics karena aplikasi tidak memasangnya.
 - Mematikan opsi membersihkan cookie tema atau cache agenda lokal, termasuk cache lama sebelum ada kontrol consent. Data server tidak dihapus. Pilihan berlaku per browser/domain (bukan per akun), disinkronkan antar-tab, dan gagal tertutup bila penyimpanan pilihan diblokir.
 - Pilihan tema yang tidak diizinkan tidak dibaca saat bootstrap. Cache disk tidak dibaca/ditulis tanpa izin; hasil fetch/hydration yang masih berjalan memeriksa ulang izin sebelum menyimpan/memulihkan data.
 - Cookie tema berumur 30 hari. Cache lebih tua dari 30 hari tidak digunakan; pembersihan usia cache berjalan saat penulisan berikutnya, bukan timer yang menjamin penghapusan saat situs tidak dibuka. Keluar/penarikan izin membersihkan cache yang dikelola aplikasi.
@@ -91,4 +94,5 @@ Pemilik menyetujui publikasi dengan identitas **MySchedule Manager**, kontak **m
 - Welcome, dialog cookie dan Pengaturan akun menautkan dokumen rilis. Navigasi ke dokumen memakai anchor biasa agar HTML statis benar-benar dimuat.
 - Jalankan `npm run legal:preview`, lalu buka `http://127.0.0.1:4180/privacy/`. Perintah ini membangun versi produksi dahulu. Jalankan `npm run build` sebelum `npm run legal:test` untuk memeriksa output, tautan/aset, isi rilis dan route allowlist preview.
 - `e2e/legal-release.spec.ts` menguji tiga kebijakan tanpa JavaScript/API, anchor daftar isi, kontak, tautan Welcome saat backend gagal, serta pilihan cookie yang konsisten lintas halaman.
+- `e2e/welcome.spec.ts` juga memeriksa homepage hasil build tanpa JavaScript, bundle yang diblokir, pemeriksaan sesi yang macet, nama lengkap di mobile, dan kontrol cookie yang tetap dapat dibuka saat menunggu sesi. `legal:test` memeriksa identitas, tujuan, penggunaan data dan tag kepemilikan dalam HTML produksi.
 - `legal-drafts/` hanya arsip tinjauan lama, tidak diterbitkan dan bukan sumber rilis. Halaman ini tidak menjamin kepatuhan hukum atau persetujuan Google.

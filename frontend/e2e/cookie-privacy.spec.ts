@@ -7,6 +7,105 @@ async function publicService(page: Page) {
 }
 async function optionalCookies(page: Page) { return (await page.context().cookies()).filter(cookie => cookie.name === 'myschedule_theme') }
 
+test('cookie bar stays at the viewport bottom without shifting the hero or covering the footer', async ({ page }) => {
+  await publicService(page)
+  await page.goto('/')
+  const notice = page.getByRole('region', { name: 'Pilihan penyimpananmu' })
+  const login = page.getByRole('link', { name: 'Masuk dengan Google' })
+  await expect(login).toBeVisible()
+  const header = await page.locator('.welcome-public-header').boundingBox()
+  const bar = await notice.boundingBox()
+  const action = await login.boundingBox()
+  expect(header!.y).toBeLessThan(80)
+  expect(Math.abs(bar!.y + bar!.height - page.viewportSize()!.height)).toBeLessThanOrEqual(1)
+  expect(action!.y + action!.height).toBeLessThan(bar!.y)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
+  const heroTop = (await page.locator('h1').boundingBox())!.y
+  await notice.getByRole('button', { name: 'Tutup pemberitahuan cookie' }).click()
+  await expect(notice).toHaveCount(0)
+  expect((await page.locator('h1').boundingBox())!.y).toBe(heroTop)
+  await page.reload()
+  await expect(notice).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  const footer = await page.locator('footer').boundingBox()
+  const bottomBar = await notice.boundingBox()
+  expect(footer!.y + footer!.height).toBeLessThanOrEqual(bottomBar!.y)
+  await page.locator('footer').getByRole('button', { name: 'Pengaturan cookie' }).click()
+  await expect(page.getByRole('dialog', { name: 'Pengaturan cookie' })).toBeVisible()
+})
+
+test('closing the bar does not grant consent and settings remain available', async ({ page }) => {
+  await publicService(page)
+  await page.goto('/')
+  const notice = page.getByRole('region', { name: 'Pilihan penyimpananmu' })
+  await notice.getByRole('button', { name: 'Tutup pemberitahuan cookie' }).click()
+  await expect(notice).toHaveCount(0)
+  expect((await page.context().cookies()).some(cookie => ['myschedule_storage', 'myschedule_theme'].includes(cookie.name))).toBe(false)
+  await expect(page.getByRole('link', { name: 'Masuk dengan Google' })).toBeVisible()
+  await page.getByRole('button', { name: 'Pengaturan cookie' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Pengaturan cookie' })
+  await expect(dialog.getByRole('checkbox', { name: 'Ingat tema tampilan' })).not.toBeChecked()
+  await expect(dialog.getByRole('checkbox', { name: 'Simpan agenda di perangkat' })).not.toBeChecked()
+  await dialog.getByRole('button', { name: 'Batal' }).click()
+  await page.reload()
+  await expect(notice).toBeVisible()
+})
+
+test('cookie bar reserves its actual height after a narrow-screen resize', async ({ page }) => {
+  await publicService(page)
+  await page.goto('/')
+  await page.setViewportSize({ width: 320, height: 640 })
+  const notice = page.getByRole('region', { name: 'Pilihan penyimpananmu' })
+  await expect(notice).toBeVisible()
+  await expect.poll(async () => {
+    const bar = await notice.boundingBox()
+    const reserve = await page.locator('.privacy-notice-reserve').boundingBox()
+    return Math.abs(bar!.height - reserve!.height)
+  }).toBeLessThanOrEqual(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  for (const label of ['Hanya yang wajib', 'Izinkan opsional', 'Pengaturan cookie', 'Tutup pemberitahuan cookie']) {
+    const button = notice.getByRole('button', { name: label })
+    const bounds = await button.boundingBox()
+    expect(bounds!.height).toBeGreaterThanOrEqual(44)
+    expect(await button.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
+  }
+})
+
+test('a mobile hosting badge cannot cover the cookie choices', async ({ page }) => {
+  await publicService(page)
+  await page.setViewportSize({ width: 320, height: 640 })
+  await page.goto('/')
+  const notice = page.getByRole('region', { name: 'Pilihan penyimpananmu' })
+  await expect(notice).toBeVisible()
+  await page.evaluate(() => {
+    const badge = document.createElement('iframe')
+    badge.id = 'nl-badge-frame'
+    badge.title = 'Synthetic hosting badge'
+    badge.style.cssText = 'position:fixed;right:0;bottom:0;width:202px;height:64px;z-index:9999;border:0'
+    document.body.append(badge)
+  })
+  const actions = await notice.locator('.privacy-actions').boundingBox()
+  expect(actions!.y + actions!.height).toBeLessThan(640 - 64)
+  await expect.poll(async () => {
+    const bar = await notice.boundingBox()
+    const reserve = await page.locator('.privacy-notice-reserve').boundingBox()
+    return Math.abs(bar!.height - reserve!.height)
+  }).toBeLessThanOrEqual(1)
+  await notice.getByRole('button', { name: 'Pengaturan cookie' }).click()
+  await expect(page.getByRole('dialog', { name: 'Pengaturan cookie' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  const footer = await page.locator('footer').boundingBox()
+  const bar = await notice.boundingBox()
+  expect(footer!.y + footer!.height).toBeLessThanOrEqual(bar!.y)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const desktopActions = await notice.locator('.privacy-actions').boundingBox()
+  expect(desktopActions!.x + desktopActions!.width).toBeLessThan(1440 - 202)
+  await notice.getByRole('button', { name: 'Pengaturan cookie' }).click()
+  await expect(page.getByRole('dialog', { name: 'Pengaturan cookie' })).toBeVisible()
+})
+
 test('optional storage is off before consent, and rejecting it does not block real login', async ({ page }) => {
   await publicService(page)
   await page.goto('/')

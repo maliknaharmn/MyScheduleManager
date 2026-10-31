@@ -3,7 +3,9 @@
 Production frontend: **https://myschedulemanager.netlify.app**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.
-Latest production deploy ID: `6ae335f6462dd1c3e6bcdc06` (homepage ownership tag, 2026-10-29).
+Latest production deploy ID: `6ae5c162e89b7a8e8b6117d7` (bottom cookie-consent bar, 2026-10-31).
+Static homepage/branding deploy ID: `6ae5bb8d2407182b6dd86f30` (2026-10-31).
+Homepage ownership-tag deploy ID: `6ae335f6462dd1c3e6bcdc06` (2026-10-29).
 Public legal/cookie release deploy ID: `6ae307e299941b4da528f2e9`.
 Initial deploy ID: `6ae21772a5f42aa95f4f02eb`.
 The owner changed visibility to Public; anonymous HTTP and browser checks now
@@ -110,6 +112,68 @@ All three policy URLs still returned 200. Production build, 24 unit tests,
 3 static-document/ownership tests and 84 desktop/mobile E2E passed. Search Console
 ownership and Google Auth Platform approval still require the owner's actions.
 
+### Homepage purpose/name remediation (2026-10-31)
+
+- The owner reports successful Search Console verification using the same account
+  associated with the OAuth project as Owner/Editor. This is owner-confirmed, not
+  independently inspected through the public verification tag.
+- The original response contained an empty React root and a short no-script
+  fallback; the full Welcome also waited for `/me`. The heading was a slogan and
+  the mobile header hid `Manager`. These are observed crawlability/identity risks,
+  not proof of Google's exact internal rejection reason.
+- The deployed initial HTML now renders the shared public Welcome: exact app name
+  in the heading and mobile brand, clear agenda/notes/checklist purpose, identity-only
+  Google data use, operator/contact, illustration label and policy links. It is
+  readable without JavaScript or the API. Client loading/failure states keep this
+  information visible; the private workspace still requires a verified session.
+- `netlify build --context production`, 25 unit tests, 4 static/legal tests and
+  90 desktop/mobile Chromium E2E passed. E2E now uses the production build, including
+  no-JS reading, blocked bundles and a stalled session check. Live HTTP confirms
+  the public body, unchanged ownership tag, 200 policy pages, no `noindex` and no
+  cross-domain homepage redirect. Live desktop/tablet/mobile checks in both themes
+  and no-JS mobile found no overflow or JavaScript exceptions.
+- During this initial homepage deploy, the Netlify badge intercepted pointer clicks
+  on the mobile footer's cookie-settings button; keyboard activation still worked.
+  The later bottom-bar update below adds badge-safe spacing without hiding the badge
+  or changing the hosting setting.
+- Retry **Verify Branding** with app name `MySchedule Manager` and the exact links
+  listed above. If the same ownership/name/purpose findings remain, request manual
+  review and attach a non-secret Search Console ownership-status screenshot and
+  the homepage URL. If Google already emailed a verification case, reply there to
+  confirm the homepage update and successful ownership verification. Manual review
+  commonly takes 2-3 business days, not a guaranteed approval time. Publish branding
+  only after the status becomes **Ready to publish**.
+- No OAuth Console/IAM settings or backend configuration were changed in this
+  remediation. Database readiness remains 503 / `not_ready`, so
+  real hosted login and Google's approval are still unverified.
+
+Official guidance: [Brand verification](https://developers.google.com/identity/verification/authentication-verification)
+and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=en).
+
+## Cookie bottom-bar update (2026-10-31)
+
+- Following the owner's reference, the initial notice is a compact, full-width
+  non-modal bar at the bottom of the viewport, not above the header. It has no
+  backdrop, scroll lock or automatic focus. The hero and sign-in position do not
+  shift when it appears or closes.
+- A measured end-of-page spacer keeps the footer scrollable above the bar. The
+  observer measures the border box so padding-only changes, resize, error text
+  and host-badge clearance also update the reserved height.
+- Reject, allow and granular settings remain available. The close button only
+  dismisses the notice for the current mount; it stores no consent, enables no
+  optional storage and does not prevent reopening settings through the footer.
+- The Netlify badge is neither disabled nor concealed. When present, responsive
+  spacing keeps cookie buttons clear of its hit area on mobile and desktop.
+- Build, 25 unit tests, 4 static/legal tests and 98 desktop/mobile Chromium E2E
+  passed. Live 1440/768/390/320px checks in light/dark verified bottom placement,
+  an unchanged header position, a visible sign-in control, footer clearance,
+  real pointer access to settings and closing without consent. Screenshots were
+  opened and remain local under `.local/cookie-bottom-live/`.
+- The Google ownership tag, prerendered public identity/purpose, static legal
+  documents, session gates and consent-storage semantics are preserved. No
+  backend changes were made. The homepage and cookie-bar source changes are
+  included together in the subsequent main-branch publication.
+
 ## Public legal/cookie release (2026-10-29)
 
 - Owner approved publication with operator **MySchedule Manager**, contact
@@ -142,6 +206,11 @@ ownership and Google Auth Platform approval still require the owner's actions.
 ## Smoke checks and launch gate
 
 - `/` and direct refresh of `/agenda`, `/notes`, `/settings`, `/login` serve React.
+- The built homepage must contain the visible **MySchedule Manager** heading,
+  purpose, Google data-use disclosure, policy links and contact inside `#root`,
+  outside `<noscript>`, before JavaScript or session/API responses. `npm run build`
+  includes the anonymous shared-component prerender; do not deploy `vite build`
+  output without running that step. Private workspace content is never prerendered.
 - `/health/live` returns JSON 200; `/health/ready` must return JSON 200 before login.
 - `/api/v1/status` must show `database: ready` and `google_login_configured: true`.
 - `/api/v1/me` without login returns JSON 401 and `Cache-Control: no-store`, not

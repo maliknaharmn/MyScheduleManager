@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { X } from 'lucide-react'
 import { clearWeekCache } from './week-cache'
 import { openStorageSettings, readStorageChoice, removeThemeCookie, saveStorageChoice, useStorageChoice } from './storage-consent'
 
@@ -8,20 +9,39 @@ export function CookieSettingsButton() {
 
 const storageError = 'Pilihan tidak dapat disimpan di browser ini. Penyimpanan opsional tetap tidak diaktifkan; kamu tetap dapat memakai aplikasi.'
 
-// Show the initial notice on the public gateway, never above an authenticated
-// working form where it would push the Save action out of the first viewport.
+// A non-modal bottom bar on the public gateway only. Reserve its measured height
+// at the end of the page so the footer can scroll completely above it.
 export function CookieNotice() {
   const choice = useStorageChoice()
   const [error, setError] = useState('')
-  if (choice) return null
+  const [dismissed, setDismissed] = useState(false)
+  const [height, setHeight] = useState(0)
+  const notice = useRef<HTMLElement>(null)
+  const visible = !choice && !dismissed
+  useLayoutEffect(() => {
+    const element = notice.current
+    if (!visible || !element) return
+    const measure = () => setHeight(Math.ceil(element.getBoundingClientRect().height))
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure)
+    observer?.observe(element, { box: 'border-box' })
+    window.addEventListener('resize', measure)
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure) }
+  }, [visible])
+  if (!visible) return null
   const save = (allow: boolean) => {
     if (!saveStorageChoice({ preferences: allow, agendaCache: allow })) setError(storageError)
   }
-  return <section className="privacy-notice" aria-labelledby="privacy-notice-title">
-    <div><h2 id="privacy-notice-title">Pilihan penyimpananmu</h2><p>Cookie wajib menjaga login. Menyimpan tema dan agenda di perangkat bersifat opsional. Kamu tetap bisa masuk jika menolaknya. <a href="/cookies/">Kebijakan Cookie</a></p></div>
-    <div className="privacy-actions"><button type="button" onClick={() => save(false)}>Hanya yang wajib</button><button type="button" onClick={() => save(true)}>Izinkan opsional</button><CookieSettingsButton /></div>
-    {error && <p className="privacy-error" role="alert">{error}</p>}
-  </section>
+  return <div className="privacy-notice-reserve" style={{ height }}>
+    <section ref={notice} className="privacy-notice" aria-labelledby="privacy-notice-title">
+      <div className="privacy-notice-content">
+        <div><h2 id="privacy-notice-title">Pilihan penyimpananmu</h2><p>Cookie wajib menjaga login. Tema dan agenda di perangkat hanya disimpan jika kamu mengizinkan. <a href="/cookies/">Kebijakan Cookie</a></p></div>
+        <div className="privacy-actions"><button type="button" onClick={() => save(false)}>Hanya yang wajib</button><button type="button" onClick={() => save(true)}>Izinkan opsional</button><CookieSettingsButton /></div>
+        {error && <p className="privacy-error" role="alert">{error}</p>}
+      </div>
+      <button type="button" className="privacy-notice-close" aria-label="Tutup pemberitahuan cookie" onClick={() => setDismissed(true)}><X size={20} aria-hidden /></button>
+    </section>
+  </div>
 }
 
 export function CookiePrivacy() {

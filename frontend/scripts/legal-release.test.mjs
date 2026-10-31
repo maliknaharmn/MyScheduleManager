@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { JSDOM } from 'jsdom'
 import { createLegalPreview } from './preview-legal.mjs'
 
 test('Google ownership verification is in the static homepage head before and after build', async () => {
@@ -13,6 +14,33 @@ test('Google ownership verification is in the static homepage head before and af
     assert.equal(tags.length, 1, `${file}: keep exactly one owner verification tag`)
     assert.equal(tags[0].match(/\bcontent="([^"]*)"/)?.[1], token)
   }
+})
+
+test('built homepage identifies the app, purpose and Google data use in ordinary static HTML', async () => {
+  const html = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8')
+  const dom = new JSDOM(html)
+  try {
+    const document = dom.window.document
+    assert.equal(document.title, 'MySchedule Manager')
+    assert.equal(document.querySelector('link[rel="canonical"]').href, 'https://myschedulemanager.netlify.app/')
+    assert.equal(document.querySelectorAll('h1').length, 1)
+    const root = document.getElementById('root')
+    const title = root.querySelector('h1')
+    assert.equal(title.textContent.replace(/\s/g, ''), 'MyScheduleManager')
+    assert.equal(title.closest('noscript'), null, 'main content must not be confined to noscript')
+    assert.match(root.querySelector('.welcome-hero-copy > p').textContent, /Aplikasi agenda dan catatan pribadi/)
+    assert.match(root.querySelector('.welcome-data-use').textContent, /membuat akun, memverifikasi login/)
+    assert.match(root.querySelector('.welcome-data-use').textContent, /openid, email dan profile/)
+    assert.match(root.querySelector('.welcome-data-use').textContent, /Tidak meminta akses Gmail, Drive, kontak, atau Google Calendar/)
+    assert.match(root.textContent, /Contoh tampilan dengan data ilustrasi/)
+    assert.equal(root.querySelector('a[href="mailto:maliknahar.mn@gmail.com"]').textContent, 'maliknahar.mn@gmail.com')
+    for (const path of ['/privacy/', '/terms/', '/cookies/']) assert.ok(root.querySelector(`nav a[href="${path}"]`))
+    assert.equal(root.querySelector('.welcome-google').disabled, true, 'static HTML must not claim service readiness')
+    assert.equal(root.querySelector('a[href^="/api/"]'), null)
+    assert.equal(root.querySelector('.app-shell'), null)
+    assert.equal(root.querySelector('.privacy-notice'), null, 'static content must not offer inert consent controls')
+    assert.doesNotMatch(html, /<!--public-homepage-->/)
+  } finally { dom.window.close() }
 })
 
 test('release documents are built as public HTML with contact details and working local references', async () => {

@@ -22,6 +22,23 @@ beforeEach(() => {
   }))
 })
 
+test('public identity, purpose and policies remain readable while identity verification is stalled', () => {
+  const fetch = vi.fn((_url: string) => new Promise<Response>(() => {}))
+  vi.stubGlobal('fetch', fetch)
+  const client = setup()
+  expect(screen.getByRole('heading', { name: 'MySchedule Manager' })).toBeVisible()
+  expect(screen.getByText(/Aplikasi agenda dan catatan pribadi/)).toBeVisible()
+  expect(screen.getByText(/memakai pengenal akun Google, email terverifikasi/)).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Memeriksa akses…' })).toBeDisabled()
+  expect(screen.getAllByRole('link', { name: 'Ketentuan Layanan' })[0]).toHaveAttribute('href', '/terms/')
+  expect(screen.getAllByRole('button', { name: 'Pengaturan cookie' })[0]).toBeVisible()
+  expect(screen.queryByRole('link', { name: 'Masuk dengan Google' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Tambah agenda')).not.toBeInTheDocument()
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(fetch.mock.calls[0][0]).toBe('/api/v1/me')
+  client.clear()
+})
+
 test('unavailable login uses public copy without developer diagnostics', async () => {
   const client = setup()
   expect(await screen.findByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled()

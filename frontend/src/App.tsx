@@ -29,7 +29,7 @@ function AppContent() {
   useEffect(() => {
     if (me.isSuccess && !me.data) void forgetCalendar(queryClient)
   }, [me.isSuccess, me.data, queryClient])
-  if (me.isPending) return <SessionLoading />
   if (me.data) return <WorkspaceBoundary><Suspense fallback={<SessionLoading />}><Workspace me={me.data} /></Suspense></WorkspaceBoundary>
-  return <Welcome status={status.data} error={me.error ?? status.error} pending={me.isFetching || status.isFetching} retry={() => { void me.refetch(); void status.refetch() }} />
+  // Public information never depends on the API. Private routes still require me.data.
+  return <Welcome status={status.data} error={me.error ?? status.error} pending={me.isPending || me.isFetching || status.isFetching} retry={() => { void me.refetch(); void status.refetch() }} />
 }
