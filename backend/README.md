@@ -99,4 +99,4 @@ GOOGLE_REDIRECT_URI=http://localhost:5173/api/v1/auth/google/callback
 
 Tidak ada kredensial Google yang dibutuhkan GitHub Actions: tes callback memakai provider mock, tes Calendar memakai transport simulasi, dan PostgreSQL CI terpisah dengan password ephemeral khusus CI. **Jangan upload `.env` lokal sebagai artefak CI atau menambahkan Google secret ke frontend.**
 
-Dokumentasi perencanaan pribadi tetap lokal di `docs/` dan sengaja tidak tersedia setelah clone repository public. Panduan ini dan `.env.example` cukup untuk menjalankan fondasi tanpa mempublikasikan catatan pribadi.
+Spesifikasi teknis, rancangan desain dan catatan persetujuan yang dipertahankan di `docs/` tetap lokal dan tidak tersedia setelah clone repository public. Panduan ini dan `.env.example` cukup untuk menjalankan fondasi tanpa mempublikasikan catatan pribadi.

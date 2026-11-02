@@ -1,7 +1,6 @@
 
-# Publish only the release guide; planning and audit documents remain local.
+# Retained internal specifications and decisions remain local.
 /docs/*
-!/docs/README.md
 
 # Local configuration and secrets (examples are safe to commit).
 .env
@@ -53,5 +52,5 @@ test-results/
 /.agents/
 /skills-lock.json
 
-# Superseded local review drafts; release policies have their own HTML entries.
+# Never publish local policy-review drafts; release policies have their own HTML entries.
 /frontend/legal-drafts/

@@ -2,7 +2,7 @@
 
 Kelola agenda, lihat kapasitas harian, dan pantau persiapan melalui catatan serta checklist. MySchedule Manager adalah alat bantu perencanaan pribadi, bukan pengganti seluruh fitur Google Calendar.
 
-[Buka aplikasi](https://myschedulemanager.netlify.app/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](../DEPLOYMENT.md) · [Privasi](https://myschedulemanager.netlify.app/privacy/)
+[Buka aplikasi](https://myschedulemanager.netlify.app/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](DEPLOYMENT.md) · [Privasi](https://myschedulemanager.netlify.app/privacy/)
 
 > **Status per 30 Oktober 2026: pratinjau publik.** Frontend dan halaman legal sudah tersedia. Pemeriksaan produksi masih mengembalikan `/health/ready` **503** dan `database: not_ready`, sehingga login belum tersedia. Panduan ini mendokumentasikan fitur yang sudah diimplementasikan; bukan pernyataan bahwa seluruh alur produksi atau verifikasi Google telah selesai.
 
@@ -17,7 +17,7 @@ _Tangkapan antarmuka aplikasi dengan data ilustrasi. Nama, tanggal, agenda dan c
 
 ![Contoh Home mode gelap dengan kapasitas harian, catatan penting, dan agenda mingguan yang sama.](frontend/public/previews/home-dark.png)
 
-_Mode gelap memakai data ilustrasi yang sama. Sumber dan cara penggunaan aset dijelaskan dalam [catatan aset preview](../frontend/assets-source/preview-README.md)._
+_Mode gelap memakai data ilustrasi yang sama. Sumber dan cara penggunaan aset dijelaskan dalam [catatan aset preview](frontend/assets-source/preview-README.md)._
 
 </details>
 
@@ -73,8 +73,8 @@ Dokumen publik dapat dibaca tanpa login atau JavaScript:
 
 Prasyarat: **Python 3.13**, **PostgreSQL**, dan **Node.js >=22.12.0**.
 
-1. Ikuti [instalasi backend](../backend/README.md#instalasi) untuk virtualenv, dependensi, konfigurasi database dan migrasi. Gunakan database development/test terpisah; jangan menjalankan provisioning ulang pada resource yang sudah ada.
-2. Konfigurasikan [Google OAuth development](../backend/README.md#google-oauth-development). Simpan kredensial hanya di konfigurasi lokal/server, bukan `VITE_*`, dokumentasi atau bundle browser.
+1. Ikuti [instalasi backend](backend/README.md#instalasi) untuk virtualenv, dependensi, konfigurasi database dan migrasi. Gunakan database development/test terpisah; jangan menjalankan provisioning ulang pada resource yang sudah ada.
+2. Konfigurasikan [Google OAuth development](backend/README.md#google-oauth-development). Simpan kredensial hanya di konfigurasi lokal/server, bukan `VITE_*`, dokumentasi atau bundle browser.
 3. Jalankan API dari folder `backend/`:
 
    ```sh
@@ -101,7 +101,7 @@ npm run legal:test
 npm run test:e2e
 ```
 
-`legal:test` memeriksa output build, sehingga harus dijalankan setelah build. E2E memerlukan Chromium Playwright dan memakai port 4173/8001. Untuk lint dan tes PostgreSQL terpisah, ikuti [tes backend](../backend/README.md#tes-dan-kontrak).
+`legal:test` memeriksa output build, sehingga harus dijalankan setelah build. E2E memerlukan Chromium Playwright dan memakai port 4173/8001. Untuk lint dan tes PostgreSQL terpisah, ikuti [tes backend](backend/README.md#tes-dan-kontrak).
 
 Gate produksi:
 
@@ -115,10 +115,9 @@ Gate produksi:
 
 | Dokumen                                        | Isi                                                                       |
 | ---------------------------------------------- | ------------------------------------------------------------------------- |
-| [Ringkasan repository](../README.md)           | Pengenalan produk dan titik awal pengembangan.                            |
-| [Frontend](../frontend/README.md)              | Alur antarmuka, cache, tema, dan pengujian browser.                       |
-| [Backend](../backend/README.md)                | Instalasi API, database, autentikasi dan kontrak endpoint.                |
-| [Deployment](../DEPLOYMENT.md)                 | Konfigurasi Netlify/FastAPI Cloud, Google OAuth dan pemeriksaan produksi. |
-| [Pemeliharaan kebijakan](../frontend/LEGAL.md) | Sumber dokumen legal dan batas operasional yang harus dipertahankan.      |
+| [Frontend](frontend/README.md)                | Alur antarmuka, cache, tema, dan pengujian browser.                       |
+| [Backend](backend/README.md)                  | Instalasi API, database, autentikasi dan kontrak endpoint.                |
+| [Deployment](DEPLOYMENT.md)                  | Konfigurasi Netlify/FastAPI Cloud, Google OAuth dan pemeriksaan produksi. |
+| [Pemeliharaan kebijakan](frontend/LEGAL.md)   | Sumber dokumen legal dan batas operasional yang harus dipertahankan.      |
 
-Panduan ini adalah bagian dokumentasi publik. PRD, riset, catatan persetujuan, rancangan lama dan laporan audit pada subdirektori `docs/` tetap lokal; tidak disertakan atau ditautkan sebagai dokumen yang tersedia setelah clone repository.
+Panduan ini adalah bagian dokumentasi publik. Spesifikasi teknis, rancangan desain dan catatan persetujuan yang dipertahankan di `docs/` tetap lokal dan tidak tersedia setelah clone repository publik.

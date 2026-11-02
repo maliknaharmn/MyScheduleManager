@@ -95,4 +95,4 @@ Pemilik menyetujui publikasi dengan identitas **MySchedule Manager**, kontak **m
 - Jalankan `npm run legal:preview`, lalu buka `http://127.0.0.1:4180/privacy/`. Perintah ini membangun versi produksi dahulu. Jalankan `npm run build` sebelum `npm run legal:test` untuk memeriksa output, tautan/aset, isi rilis dan route allowlist preview.
 - `e2e/legal-release.spec.ts` menguji tiga kebijakan tanpa JavaScript/API, anchor daftar isi, kontak, tautan Welcome saat backend gagal, serta pilihan cookie yang konsisten lintas halaman.
 - `e2e/welcome.spec.ts` juga memeriksa homepage hasil build tanpa JavaScript, bundle yang diblokir, pemeriksaan sesi yang macet, nama lengkap di mobile, dan kontrol cookie yang tetap dapat dibuka saat menunggu sesi. `legal:test` memeriksa identitas, tujuan, penggunaan data dan tag kepemilikan dalam HTML produksi.
-- `legal-drafts/` hanya arsip tinjauan lama, tidak diterbitkan dan bukan sumber rilis. Halaman ini tidak menjamin kepatuhan hukum atau persetujuan Google.
+- Halaman legal dan tes otomatis tidak menjamin kepatuhan hukum atau persetujuan Google.

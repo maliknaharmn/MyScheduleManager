@@ -24,6 +24,8 @@ the gateway public does not remove account ownership or app authentication.
   `npm run build`, and publish directory `dist`. `frontend/package-lock.json`
   controls dependency installation. Repository-root `netlify.toml` is authoritative.
 - FastAPI remains at `https://myschedulemanager.fastapicloud.dev`.
+- Current backend deployment: `d46799a0-6595-49f9-b0bb-a60f99071853`
+  (production Neon readiness repair, 2026-10-31; source commit `e73e05a`).
 - Browser requests stay on the Netlify origin: `/api/*` and `/health/*` proxy to
   the same paths on FastAPI Cloud. React Router's SPA fallback comes last.
 - OAuth and session cookies are host-only (no explicit Domain), HttpOnly, Secure
@@ -74,6 +76,59 @@ Run a **single API worker/replica** while OAuth handshakes use process memory.
 Disable access logging of OAuth query strings. Rebuild/redeploy after changing
 backend settings or code. Production startup rejects missing security/database
 configuration; readiness also checks roles and migrations, not only process liveness.
+
+### Production readiness repair (2026-10-31)
+
+- **Resolved:** `/health/ready` returns 200 both directly on FastAPI Cloud and
+  through Netlify. Both `/api/v1/status` endpoints report `database: ready` and
+  `google_login_configured: true`. Earlier 503 findings below are historical.
+- **Actual cause:** the Cloud environment still contained the local development
+  `DATABASE_URL` and `AUTH_DATABASE_URL`, targeting localhost / `myschedule_dev`.
+  Ignored local Neon configuration is not uploaded to Cloud; a correct local
+  readiness result did not mean the deployed environment had the same URLs.
+- Replaced only those two connection values with the existing verified pooled
+  Neon production URLs for `myschedule_app` and `myschedule_auth` / `neondb`.
+  No owner credentials were used for runtime, and no schema, data, grants, role
+  passwords, readiness checks or application source were changed.
+- Preserved the Google credentials, session secret, HTTPS origin, callback and
+  secure-cookie settings. Existing credential-bearing environment variables were
+  recreated with identical values as encrypted secrets, except for the two
+  deliberately corrected database URLs. Cloud secret types are immutable: an
+  upsert on an existing regular variable does not convert it to a secret. The
+  save-only replacement completed before redeployment; no secret values appear
+  in this document or the verification reports.
+- Reduced maximum replicas from 2 to 1 for the in-memory OAuth handshake store;
+  minimum remains 0, preserving the existing scale-to-zero plan. Startup logs
+  show one server process. Cloud rejected `WEB_CONCURRENCY` as a reserved name;
+  it was not added. Shared durable handshake storage is still needed before
+  multi-replica deployment. Idle scale-down/restarts can invalidate an in-flight
+  login; restart the login flow rather than bypassing state checks.
+- Redeployed the existing image from commit `e73e05a` as
+  `d46799a0-6595-49f9-b0bb-a60f99071853`; Cloud reports `success`.
+  No frontend redeployment, Git commit or push was needed for this repair.
+- Live checks: readiness 200; anonymous `/me`, `/schedules` and `/notes` remain
+  401 on both origins; all inspected API responses retain `no-store`. OAuth start
+  returns 303 to Google with the production callback, identity-only scopes,
+  nonce/state, S256 PKCE and a Secure/HttpOnly/host-only/SameSite=Lax cookie.
+  An unbound callback and a replay are rejected; a correctly bound cancellation
+  redirects safely without creating a session. External return URLs are rejected.
+- Verification: 122 backend tests, Ruff, frontend production build, 25 frontend
+  unit tests, 4 static/legal checks and 98 desktop/mobile Chromium E2E pass.
+  Live desktop/tablet/mobile checks in light/dark confirm the Google sign-in
+  link is active, with no private workspace shown before authentication, page
+  overflow or JavaScript exceptions. Local audit artifacts were removed during
+  the owner-approved documentation cleanup; these are historical results.
+- **Still requires the owner:** complete real Google sign-in, then verify the
+  resulting session, authenticated mutation, second-account isolation and logout
+  in production. No Google account was signed in and no synthetic production
+  user was inserted during this repair. Google Branding approval remains a
+  separate, unverified provider-side process.
+
+To prevent recurrence, set the runtime URLs on the existing Cloud app, not only
+in local `.env` files. Never bulk-import `backend/.env` into production: it
+contains local development/test targets. Keep both limited runtime roles,
+verified TLS, and the existing readiness/migration checks; inspect the actual
+deployed configuration before changing schema or provisioning a new database.
 
 ## Google Auth Platform
 
@@ -144,8 +199,9 @@ ownership and Google Auth Platform approval still require the owner's actions.
   commonly takes 2-3 business days, not a guaranteed approval time. Publish branding
   only after the status becomes **Ready to publish**.
 - No OAuth Console/IAM settings or backend configuration were changed in this
-  remediation. Database readiness remains 503 / `not_ready`, so
-  real hosted login and Google's approval are still unverified.
+  homepage remediation. At that point database readiness was 503 / `not_ready`;
+  it was subsequently repaired as documented above. Real hosted login and
+  Google's approval remain unverified.
 
 Official guidance: [Brand verification](https://developers.google.com/identity/verification/authentication-verification)
 and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=en).
@@ -168,7 +224,7 @@ and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=
   passed. Live 1440/768/390/320px checks in light/dark verified bottom placement,
   an unchanged header position, a visible sign-in control, footer clearance,
   real pointer access to settings and closing without consent. Screenshots were
-  opened and remain local under `.local/cookie-bottom-live/`.
+  opened during verification; local audit artifacts were later removed.
 - The Google ownership tag, prerendered public identity/purpose, static legal
   documents, session gates and consent-storage semantics are preserved. No
   backend changes were made. The homepage and cookie-bar source changes are
@@ -200,8 +256,7 @@ and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=
 - `/health/live` is 200, but `/health/ready` is still 503 and `/api/v1/status` reports
   `database: not_ready`. The app correctly keeps login disabled. This frontend
   release does not resolve database readiness or verify hosted Google consent.
-- Local screenshots/audit: `.local/legal-release/` and
-  `docs/design/LEGAL_RELEASE_AUDIT.md`. Maintenance: `frontend/LEGAL.md`.
+- Policy maintenance: `frontend/LEGAL.md`.
 
 ## Smoke checks and launch gate
 
@@ -219,14 +274,15 @@ and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=
   a Secure/HttpOnly session cookie, `/me` 200, and a successful CSRF-protected mutation.
 - Sign in with a second account; verify private agenda/notes never cross accounts,
   then verify logout. No provider-mocked/local test proves real hosted OAuth works.
-- FastAPI Cloud was reachable during setup, but its readiness returned 503 with
-  `database: not_ready`. Frontend deployment alone does not resolve that blocker.
+- During initial setup FastAPI Cloud returned readiness 503 / `database: not_ready`.
+  The production configuration repair above resolves that specific blocker;
+  frontend deployment alone was not sufficient.
 - Initial proxy checks found a localhost callback and an OAuth cookie lacking
   Secure. After the owner updated FastAPI Cloud env, rechecking on 2026-10-29
   confirmed the production Netlify callback and Secure/HttpOnly/host-only,
   SameSite=Lax OAuth cookie. PKCE remains S256 and scopes remain identity-only.
-  Database readiness still returns 503 both directly and through Netlify; this is
-  now the remaining observed blocker. Actual hosted Google consent is not verified.
+  Database readiness was still 503 at that time; it is now 200 after the Cloud
+  runtime-URL repair above. Actual hosted Google consent is not verified.
 
 ## Verified first deployment (2026-10-29)
 
@@ -240,7 +296,8 @@ and [App homepage findings](https://support.google.com/cloud/answer/13807376?hl=
 - Real deployed-page Chromium checks passed for light/dark at desktop/tablet/mobile:
   theme, preview image, no horizontal overflow, no JavaScript exception, direct
   SPA route load. Login correctly remains disabled while the database is not ready.
-  Screenshots in `.local/netlify-production/` were opened, not committed.
+  Screenshots were opened during verification, not committed; local audit
+  artifacts were later removed.
 - Backend Ruff check/format and 122 tests passed; frontend build and 21 unit tests
   passed. Live Google consent, session cookies after consent, and private mutations
   remain unverified until backend readiness/production settings are fixed.

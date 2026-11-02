@@ -26,8 +26,8 @@ does not edit Google Console, verify domain ownership, or guarantee Google appro
    controls are a progressive enhancement, not a prerequisite for reading.
 4. Run build, unit/legal tests and desktop/mobile E2E. Inspect both themes on the
    production build, including the cookie dialog and the print/no-JS fallback.
-5. Deploy `frontend/dist` only. Never copy the archived `legal-drafts/`, `.env`,
-   private documents, reports or account data into public assets.
+5. Deploy `frontend/dist` only. Never copy `.env`, private documents, local drafts,
+   reports or account data into public assets.
 
 ## Operational limits to preserve
 
