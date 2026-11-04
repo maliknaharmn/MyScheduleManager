@@ -15,13 +15,14 @@ from pydantic import Field, model_validator
 from sqlalchemy import delete, func, select
 
 from myschedule.auth import Identity, assert_csrf, current_identity
-from myschedule.domain.availability import Occurrence, Source, availability, expand
+from myschedule.domain.availability import Occurrence, Source, calculate_day, expand
 from myschedule.domain.schedules import (
     DailyPattern,
     DateOnly,
     ScheduleInput,
     StrictModel,
     TimedInterval,
+    dates_between,
     local_instant,
     validate_timezone,
 )
@@ -277,6 +278,19 @@ def schedule_data(row: Schedule, tags: list[dict], offsets: list[int]) -> dict:
     }
 
 
+async def selected_schedule_tags(session, user_id: UUID, tag_ids: list[UUID]) -> list[dict]:
+    if not tag_ids:
+        return []
+    tags = (
+        await session.scalars(
+            select(Tag).where(Tag.user_id == user_id, Tag.id.in_(tag_ids)).order_by(Tag.name)
+        )
+    ).all()
+    if {tag.id for tag in tags} != set(tag_ids):
+        raise ApiError(422, "INVALID_TAG", "Pilih tag yang tersedia di akun ini.")
+    return [{"id": tag.id, "name": tag.name, "system_key": tag.system_key} for tag in tags]
+
+
 async def note_view(session, row: TargetNote) -> dict:
     data = (await note_views(session, [row]))[0]
     links = (
@@ -386,18 +400,7 @@ async def list_schedules(request: Request, identity: Login, limit: int = Query(5
 async def create_schedule(request: Request, identity: Login, body: ScheduleInput):
     assert_csrf(request, identity)
     async with request.app.state.database.session(identity.user_id) as session:
-        if body.tag_ids:
-            valid_ids = set(
-                (
-                    await session.scalars(
-                        select(Tag.id).where(
-                            Tag.user_id == identity.user_id, Tag.id.in_(body.tag_ids)
-                        )
-                    )
-                ).all()
-            )
-            if valid_ids != set(body.tag_ids):
-                raise ApiError(422, "INVALID_TAG", "Pilih tag yang tersedia di akun ini.")
+        tags = await selected_schedule_tags(session, identity.user_id, body.tag_ids)
         value = body.time
         row = Schedule(
             user_id=identity.user_id,
@@ -419,7 +422,9 @@ async def create_schedule(request: Request, identity: Login, body: ScheduleInput
             for offset in body.reminder_offsets_minutes
         )
         await session.flush()
-        data = await schedule_view(session, row)
+        # Relationships were validated and written in this transaction. Avoid
+        # reading them back (including two empty SELECTs for an ordinary agenda).
+        data = schedule_data(row, tags, sorted(body.reminder_offsets_minutes, reverse=True))
     return envelope(request, data)
 
 
@@ -464,18 +469,7 @@ async def update_schedule(
     assert_csrf(request, identity)
     async with request.app.state.database.session(identity.user_id) as session:
         row = await locked_schedule(session, identity.user_id, schedule_id, body.expected_version)
-        if body.tag_ids:
-            valid_ids = set(
-                (
-                    await session.scalars(
-                        select(Tag.id).where(
-                            Tag.user_id == identity.user_id, Tag.id.in_(body.tag_ids)
-                        )
-                    )
-                ).all()
-            )
-            if valid_ids != set(body.tag_ids):
-                raise ApiError(422, "INVALID_TAG", "Pilih tag yang tersedia di akun ini.")
+        tags = await selected_schedule_tags(session, identity.user_id, body.tag_ids)
         row.title, row.category, row.status = body.title, body.category, body.status
         row.time_mode, row.timezone = body.time.mode, body.time.timezone
         for key, value in schedule_time_fields(body.time).items():
@@ -497,7 +491,7 @@ async def update_schedule(
         await session.flush()
         # SQL expression onupdate expires updated_at; load it explicitly in async ORM.
         await session.refresh(row)
-        data = await schedule_view(session, row)
+        data = schedule_data(row, tags, sorted(body.reminder_offsets_minutes, reverse=True))
     return envelope(request, data)
 
 
@@ -563,25 +557,38 @@ async def week_overview(
                 )
             )
         ).all()
-        important_ids = set(
-            (
-                await session.scalars(
-                    select(ScheduleTag.schedule_id)
-                    .join(Tag, Tag.id == ScheduleTag.tag_id)
-                    .where(Tag.user_id == identity.user_id, Tag.system_key == "important")
-                )
-            ).all()
+        important_ids = (
+            set(
+                (
+                    await session.scalars(
+                        select(ScheduleTag.schedule_id)
+                        .join(Tag, Tag.id == ScheduleTag.tag_id)
+                        .where(
+                            Tag.user_id == identity.user_id,
+                            Tag.system_key == "important",
+                            ScheduleTag.user_id == identity.user_id,
+                            ScheduleTag.schedule_id.in_([row.id for row in rows]),
+                        )
+                    )
+                ).all()
+            )
+            if rows
+            else set()
         )
         sources = [
             Source(str(row.id), domain_time(row), row.id in important_ids, row.status)
             for row in rows
         ]
-        capacities = availability(sources, week_start, week_end, profile.timezone)
         by_id = {str(row.id): row for row in rows}
         occurrences = [
             item
             for source in sources
             for item in expand(source, week_start, week_end, profile.timezone)
+        ]
+        # Expand recurring sources once for both capacity and rendered rows.
+        capacities = [
+            calculate_day(occurrences, day, profile.timezone)
+            for day in dates_between(week_start, week_end)
         ]
         days = []
         for capacity in capacities:

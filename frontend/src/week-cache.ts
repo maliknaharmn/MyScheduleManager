@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api, ApiError, type Me } from './api/client'
 import type { ListResult, Note, NoteDetail, WeekOverview } from './api/resources'
@@ -118,7 +118,8 @@ export async function notesChanged(client: QueryClient, row: NoteDetail | null, 
 
 export async function agendaChanged(client: QueryClient, broadcast = true) {
   const clear = clearWeekCache()
-  await client.cancelQueries({ queryKey: ['week'] })
+  await client.cancelQueries({ predicate: (query) => ['week', 'week-prefetch'].includes(String(query.queryKey[0])) })
+  client.removeQueries({ queryKey: ['week-prefetch'] })
   await clear
   // Old capacity totals must not survive edits/deletes. Refetch active views only.
   void client.resetQueries({ queryKey: ['week'] })
@@ -145,9 +146,33 @@ export function splitWeeks(window: WeekOverview): WeekOverview[] {
   return weeks
 }
 
+function nextWeek(start: string) {
+  const value = new Date(`${start}T12:00:00Z`)
+  value.setUTCDate(value.getUTCDate() + 7)
+  return value.toISOString().slice(0, 10)
+}
+
+async function fetchWindow(client: QueryClient, me: Me, start: string, weeks: number, signal: AbortSignal, epoch: number) {
+  let window: WeekOverview
+  try {
+    window = await api<WeekOverview>(`/overview/week?week_start=${start}&weeks=${weeks}`, { signal })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
+      client.setQueryData<Me | null>(['me'], null)
+      void clearWeekCache()
+    }
+    throw error
+  }
+  if (signal.aborted || epoch !== generation) throw new DOMException('Calendar request superseded', 'AbortError')
+  if (window.week_start !== start || window.timezone !== me.profile.timezone || window.days.length !== weeks * 7 || window.days[0]?.date !== start) throw new Error('Rentang atau zona waktu agenda tidak sesuai. Coba lagi.')
+  return splitWeeks(window)
+}
+
 export function useWeek(me: Me, start: string) {
   const client = useQueryClient()
   const choice = useStorageChoice()
+  const loadedWindow = useRef<string | null>(null)
+  const windowKey = `${me.user.id}|${me.profile.timezone}|${start}`
   useEffect(() => {
     const epoch = generation
     let mounted = true
@@ -161,30 +186,52 @@ export function useWeek(me: Me, start: string) {
     })
     return () => { mounted = false }
   }, [client, me.user.id, me.profile.timezone, choice?.agendaCache])
-  return useQuery({
+  const query = useQuery({
     // Browser timers overflow above ~24.8 days; disk, not a timer, retains 30 days.
     queryKey: weekKey(me, start), staleTime: 60_000, gcTime: 24 * 60 * 60 * 1000,
     queryFn: async ({ signal }) => {
       const epoch = generation
-      let window: WeekOverview
-      try {
-        window = await api<WeekOverview>(`/overview/week?week_start=${start}&weeks=5`, { signal })
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
-          client.setQueryData<Me | null>(['me'], null)
-          void clearWeekCache()
-        }
-        throw error
-      }
-      if (signal.aborted || epoch !== generation) throw new DOMException('Calendar request superseded', 'AbortError')
-      const weeks = splitWeeks(window)
-      const current = weeks.find((week) => week.week_start === start)
-      if (!current || window.timezone !== me.profile.timezone) throw new Error('Rentang atau zona waktu agenda tidak sesuai. Coba lagi.')
-      for (const week of weeks) if (week.week_start !== start) client.setQueryData(weekKey(me, week.week_start), week)
-      void writeWeeks(me.user.id, weeks, epoch)
+      // The visible week must not wait for another month's data or disk writes.
+      const [current] = await fetchWindow(client, me, start, 1, signal, epoch)
+      loadedWindow.current = windowKey
+      void writeWeeks(me.user.id, [current], epoch)
       return current
     },
   })
+  useEffect(() => {
+    if (!query.data || query.isFetching || query.isError || loadedWindow.current !== windowKey) return
+    loadedWindow.current = null
+    const first = nextWeek(start)
+    let future = first
+    let fresh = true
+    for (let index = 0; index < 4; index++) {
+      const state = client.getQueryState(weekKey(me, future))
+      if (!state?.data || state.isInvalidated || state.dataUpdatedAt < Date.now() - 60_000) fresh = false
+      future = nextWeek(future)
+    }
+    if (fresh) return
+    const key = ['week-prefetch', me.user.id, me.profile.timezone, first]
+    const epoch = generation
+    void client.fetchQuery({
+      queryKey: key, staleTime: 60_000, gcTime: 60_000,
+      queryFn: async ({ signal }) => {
+        const weeks = await fetchWindow(client, me, first, 4, signal, epoch)
+        const accepted: WeekOverview[] = []
+        for (const week of weeks) {
+          const target = weekKey(me, week.week_start)
+          const state = client.getQueryState(target)
+          // Never overwrite a foreground read or a newer, fresh result.
+          if (state?.fetchStatus === 'fetching' || (state?.data && !state.isInvalidated && state.dataUpdatedAt >= Date.now() - 60_000)) continue
+          client.setQueryData(target, week)
+          accepted.push(week)
+        }
+        if (accepted.length) void writeWeeks(me.user.id, accepted, epoch)
+        return true
+      },
+    }).catch(() => { /* Prefetch failure must not block the visible week or retry a mutation. */ })
+    return () => { void client.cancelQueries({ queryKey: key, exact: true }) }
+  }, [client, me, start, windowKey, query.data, query.dataUpdatedAt, query.isFetching, query.isError])
+  return query
 }
 
 export function useCalendarTabSync() {

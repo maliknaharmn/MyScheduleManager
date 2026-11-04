@@ -24,8 +24,8 @@ the gateway public does not remove account ownership or app authentication.
   `npm run build`, and publish directory `dist`. `frontend/package-lock.json`
   controls dependency installation. Repository-root `netlify.toml` is authoritative.
 - FastAPI remains at `https://myschedulemanager.fastapicloud.dev`.
-- Current backend deployment: `d46799a0-6595-49f9-b0bb-a60f99071853`
-  (production Neon readiness repair, 2026-10-31; source commit `e73e05a`).
+- Most recently inspected backend deployment: `14e1cddb-e69b-4014-b4a5-b9786b59486b`
+  (2026-11-02; source commit `b9e5aaf`). Local performance changes require a new deployment.
 - Browser requests stay on the Netlify origin: `/api/*` and `/health/*` proxy to
   the same paths on FastAPI Cloud. React Router's SPA fallback comes last.
 - OAuth and session cookies are host-only (no explicit Domain), HttpOnly, Secure
@@ -54,6 +54,37 @@ the gateway public does not remove account ownership or app authentication.
 4. Use the resulting stable `https://<site>.netlify.app` domain for auth. Preview
    and deploy-permalink domains are not separate authorized login environments.
    Do not rely on login from previews when the backend is configured for production.
+
+## Performance on the existing Hobby hosting
+
+- Keep FastAPI Cloud Hobby, minimum 0 / maximum 1 replica. Always-on, paid upgrades,
+  provider migration and a stack rewrite are not part of the approved first pass.
+  Cold starts remain a limitation; separate idle/cold measurements from warm latency.
+- The inspected API runs in `us-east-1`; the existing Neon database is in
+  `aws-ap-southeast-1` (Singapore). The currently exposed Cloud app-create/update API
+  has no region setting. Setting `AWS_REGION` in the Python environment does not
+  move the application. Confirm Singapore availability with FastAPI Cloud support
+  before treating relocation as an available configuration option. Migration is a
+  last resort after measuring the optimized application, not a default requirement.
+- Runtime pools reuse TCP/TLS connections with defaults `DATABASE_POOL_SIZE=2`
+  and `DATABASE_POOL_MAX_OVERFLOW=1` per role/process (6 maximum client connections
+  across app/auth with one worker). Keep separate limited roles, verified TLS,
+  transaction-local RLS context, pre-ping and bounded pool waits. Migration
+  connections remain direct/unpooled and are not used by API requests.
+- Public `/status` probes are deduplicated and reused for at most 5 seconds per
+  process; database errors invalidate that result. `/health/ready` still runs the
+  complete live role/schema/connection check on every request. API responses remain
+  `no-store`; there is no shared HTTP cache for account data or session validity.
+- Identity and public status requests start together. Initial loading still gates
+  access, but a background status refresh does not disable a ready sign-in link.
+  The visible week loads first; four future weeks are prefetched after it renders.
+  Writes remain server-confirmed and never retry automatically.
+- `Server-Timing: app;dur=...` exposes only total application milliseconds, not
+  SQL or account information. Measure browser request time, application duration,
+  committed-save confirmation and cold/warm cases separately. Local tests and
+  read-only pool checks do not prove production p95 below one second. Production
+  verification requires deploying both components and measuring a real session
+  without creating synthetic data in a user's account.
 
 ## Backend configuration after the domain exists
 

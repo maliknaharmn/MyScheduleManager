@@ -1,6 +1,7 @@
 import secrets
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from time import perf_counter
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Query, Request
@@ -89,8 +90,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def response_security(request: Request, call_next):
+        started = perf_counter()
         request.state.request_id = secrets.token_hex(12)
         response = await call_next(request)
+        # Total application latency only: no SQL, identities, tokens or parameters.
+        response.headers["Server-Timing"] = f"app;dur={(perf_counter() - started) * 1000:.1f}"
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
@@ -124,7 +128,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             request,
             {
                 "phase": "foundation",
-                "database": "ready" if await database_ready() else "not_ready",
+                "database": "ready" if await app.state.database.status_ready() else "not_ready",
                 "google_login_configured": settings.google_login_configured,
                 "calendar_integration": "not_implemented",
                 "capabilities": {"schedules": True, "notes": True, "calendar_reminders": False},

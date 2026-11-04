@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+from time import monotonic
 from uuid import UUID
 
 from sqlalchemy import text
@@ -12,24 +13,48 @@ from myschedule.postgres import postgres_engine
 
 class Database:
     def __init__(self, settings: Settings):
+        pool_options = {
+            "pool_size": settings.database_pool_size,
+            "max_overflow": settings.database_pool_max_overflow,
+        }
         self.engine = (
-            postgres_engine(settings.database_url.get_secret_value())
+            postgres_engine(settings.database_url.get_secret_value(), **pool_options)
             if settings.database_url
             else None
         )
         self.auth_engine = (
-            postgres_engine(settings.auth_database_url.get_secret_value())
+            postgres_engine(settings.auth_database_url.get_secret_value(), **pool_options)
             if settings.auth_database_url
             else None
         )
+        self._status_readiness: tuple[float, bool] | None = None
+        self._status_lock = asyncio.Lock()
 
     async def close(self) -> None:
+        self._status_readiness = None
         if self.engine:
             await self.engine.dispose()
         if self.auth_engine:
             await self.auth_engine.dispose()
 
     async def ready(self) -> bool:
+        """Always perform the full live check; never serve health from a cached success."""
+        result = await self._probe_ready()
+        self._status_readiness = (monotonic() + 5, result)
+        return result
+
+    async def status_ready(self) -> bool:
+        """Deduplicate the public status probe for at most five seconds per process."""
+        cached = self._status_readiness
+        if cached is not None and cached[0] > monotonic():
+            return cached[1]
+        async with self._status_lock:
+            cached = self._status_readiness
+            if cached is not None and cached[0] > monotonic():
+                return cached[1]
+            return await self.ready()
+
+    async def _probe_ready(self) -> bool:
         if self.engine is None or self.auth_engine is None:
             return False
 
@@ -69,11 +94,15 @@ class Database:
         if engine is None:
             raise RuntimeError("Database connection is not configured")
         factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-        async with factory() as session, session.begin():
-            if user_id is not None:
-                # Reset on commit/rollback, including pooled connections.
-                await session.execute(
-                    text("SELECT set_config('app.user_id', :user_id, true)"),
-                    {"user_id": str(user_id)},
-                )
-            yield session
+        try:
+            async with factory() as session, session.begin():
+                if user_id is not None:
+                    # Reset on commit/rollback, including pooled connections.
+                    await session.execute(
+                        text("SELECT set_config('app.user_id', :user_id, true)"),
+                        {"user_id": str(user_id)},
+                    )
+                yield session
+        except (SQLAlchemyError, OSError, TimeoutError):
+            self._status_readiness = None
+            raise

@@ -13,7 +13,7 @@ const original = (): Schedule => ({
 async function fixture(page: Page, remember = true) {
   // These tests intentionally exercise the opt-in disk cache and persisted theme.
   if (remember) await page.context().addCookies([{ name: 'myschedule_storage', value: encodeURIComponent(JSON.stringify({ version: 1, preferences: true, agendaCache: true, expiresAt: Date.now() + 180 * 86400000 })), url: 'http://127.0.0.1:4173' }])
-  const state = { row: original() as Schedule | null, accountId: account, auth: true, windows: [] as string[], patches: [] as { expected_version: number; tag_ids: string[]; reminder_offsets_minutes: number[]; time: Schedule['time'] }[], deletes: 0, failDelete: false, windowGate: undefined as Promise<void> | undefined }
+  const state = { row: original() as Schedule | null, accountId: account, auth: true, windows: [] as string[], patches: [] as { expected_version: number; tag_ids: string[]; reminder_offsets_minutes: number[]; time: Schedule['time'] }[], deletes: 0, failDelete: false, windowGate: undefined as Promise<void> | undefined, prefetchGate: undefined as Promise<void> | undefined }
   await page.context().route('**/api/v1/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -49,6 +49,7 @@ async function fixture(page: Page, remember = true) {
       await state.windowGate
       const start = url.searchParams.get('week_start')!
       const weeks = Number(url.searchParams.get('weeks') ?? 1)
+      if (weeks > 1) await state.prefetchGate
       const days = Array.from({ length: weeks * 7 }, (_, index) => {
         const day = new Date(`${start}T12:00:00Z`)
         day.setUTCDate(day.getUTCDate() + index)
@@ -181,10 +182,18 @@ test('dashboard greets the full Google name; theme follows navigation order and 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
 
-test('one monthly window makes the next four weeks instant and cached weeks render while reload is pending', async ({ page }) => {
+test('the visible week does not wait for background prefetch; the next four weeks then reuse cache', async ({ page }) => {
   const state = await fixture(page)
+  let releasePrefetch!: () => void
+  state.prefetchGate = new Promise<void>((resolve) => { releasePrefetch = resolve })
   await page.goto('/?week=2026-11-16&date=2026-11-16')
   await expect(page.getByText('Rapat perencanaan', { exact: true })).toBeVisible()
+  await expect(page.getByText('Memuat agenda minggu…')).toHaveCount(0)
+  await expect.poll(() => cachedCount(page)).toBe(1)
+  expect(new URLSearchParams(state.windows[0]).get('weeks')).toBe('1')
+  await expect.poll(() => state.windows.length).toBe(2)
+  expect(new URLSearchParams(state.windows[1]).get('weeks')).toBe('4')
+  releasePrefetch()
   await expect.poll(() => cachedCount(page)).toBe(5)
   const requests = state.windows.length
   for (let week = 0; week < 4; week++) {
@@ -200,6 +209,24 @@ test('one monthly window makes the next four weeks instant and cached weeks rend
   await expect(page.getByText('0 tampilan agenda dalam minggu ini')).toBeVisible()
   release()
   await expect(page.getByText('Menampilkan cache · memperbarui…')).toHaveCount(0)
+})
+
+test('late background prefetch cannot restore private weeks after logout', async ({ page }) => {
+  const state = await fixture(page)
+  let release!: () => void
+  state.prefetchGate = new Promise<void>((resolve) => { release = resolve })
+  try {
+    await page.goto('/?week=2026-11-16&date=2026-11-16')
+    await expect(page.getByText('Rapat perencanaan', { exact: true })).toBeVisible()
+    await expect.poll(() => cachedCount(page)).toBe(1)
+    await expect.poll(() => state.windows.length).toBe(2)
+    await page.getByRole('link', { name: 'Pengaturan', exact: true }).first().click()
+    await page.getByRole('button', { name: 'Keluar', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeVisible()
+    release()
+    await expect.poll(() => cachedCount(page)).toBe(0)
+    await expect(page.locator('.app-shell')).toHaveCount(0)
+  } finally { release() }
 })
 
 test('agenda can be edited then deleted with confirmation, preserving tags/reminders and clearing the month cache', async ({ page }) => {

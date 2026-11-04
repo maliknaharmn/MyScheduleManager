@@ -41,9 +41,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export type ServerStatus = components['schemas']['StatusData']
 export type Me = components['schemas']['MeData']
 
-export async function fetchMe(): Promise<Me | null> {
+export async function fetchMe(signal?: AbortSignal): Promise<Me | null> {
   try {
-    return await api<Me>('/me')
+    return await api<Me>('/me', { signal })
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) return null
     throw error

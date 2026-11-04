@@ -4,7 +4,7 @@ Kelola agenda, lihat kapasitas harian, dan pantau persiapan melalui catatan sert
 
 [Buka aplikasi](https://myschedulemanager.netlify.app/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](DEPLOYMENT.md) · [Privasi](https://myschedulemanager.netlify.app/privacy/)
 
-> **Status per 30 Oktober 2026: pratinjau publik.** Frontend dan halaman legal sudah tersedia. Pemeriksaan produksi masih mengembalikan `/health/ready` **503** dan `database: not_ready`, sehingga login belum tersedia. Panduan ini mendokumentasikan fitur yang sudah diimplementasikan; bukan pernyataan bahwa seluruh alur produksi atau verifikasi Google telah selesai.
+> **Status pemeriksaan 4 November 2026: pratinjau publik.** Frontend dan halaman legal tersedia; readiness produksi sudah **200** dengan database `ready`. Optimasi latensi sedang diuji sebelum deployment berikutnya. Ini bukan pernyataan bahwa target produksi <1 detik, seluruh alur Google atau persetujuan branding telah terverifikasi.
 
 ## Tampilan aplikasi
 
@@ -36,7 +36,7 @@ Kapasitas dihitung dari durasi agenda: **Free** 0 jam, **Light** lebih dari 0 da
 
 ## Mulai menggunakan
 
-Setelah layanan login tersedia:
+Saat layanan login tersedia:
 
 1. Buka aplikasi dan pilih **Masuk dengan Google**. Akun dibuat setelah identitas Google terverifikasi; tidak ada allowlist email aplikasi. Akses tetap mengikuti konfigurasi Google dan status akun.
 2. Periksa **Pengaturan** untuk memastikan zona waktu sesuai. Agenda yang sudah disimpan tidak berubah hanya karena zona profil diganti.
@@ -105,7 +105,7 @@ npm run test:e2e
 
 Gate produksi:
 
-- [ ] `/health/ready` mengembalikan 200 dan `/api/v1/status` menyatakan database siap sebelum login dibuka.
+- [x] Pemeriksaan 4 November: `/health/ready` mengembalikan 200 dan `/api/v1/status` menyatakan database siap. Periksa kembali setelah deployment berikutnya.
 - [ ] Alur Google nyata berhasil: masuk, sesi, perubahan data dengan CSRF, pemisahan dua akun, dan keluar.
 - [ ] Origin/callback HTTPS dan pengaturan Google sesuai domain produksi. Pemasangan meta tag kepemilikan bukan bukti verifikasi selesai; tuntaskan Search Console dan pengajuan branding sesuai instruksi Google.
 - [ ] Halaman legal, tautan, pilihan cookie, serta tampilan desktop/mobile dan terang/gelap tetap berfungsi.

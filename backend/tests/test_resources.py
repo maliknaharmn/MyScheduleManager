@@ -33,6 +33,51 @@ async def owner_client(account, db_settings):
     return app, client, headers
 
 
+@pytest.mark.parametrize("relationships", [False, True])
+async def test_schedule_save_does_not_reread_just_written_relationships(
+    account, db_settings, relationships
+):
+    app, client, headers = await owner_client(account, db_settings)
+    statements = []
+
+    def record(connection, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    try:
+        tags = (await client.get("/api/v1/tags")).json()["data"]
+        body = agenda_body()
+        body["tag_ids"] = [row["id"] for row in tags] if relationships else []
+        body["reminder_offsets_minutes"] = [60, 1440] if relationships else []
+        engines = [
+            app.state.database.engine.sync_engine,
+            app.state.database.auth_engine.sync_engine,
+        ]
+        for engine in engines:
+            event.listen(engine, "before_cursor_execute", record)
+        try:
+            response = await client.post("/api/v1/schedules", json=body, headers=headers)
+        finally:
+            for engine in engines:
+                event.remove(engine, "before_cursor_execute", record)
+        assert response.status_code == 201, response.text
+        # Auth SELECT + RLS set_config + INSERT; relationships add only validation and writes.
+        assert len(statements) == (6 if relationships else 3)
+        assert not any(
+            statement.lstrip().upper().startswith("SELECT")
+            and ("schedule_tags" in statement or "schedule_reminders" in statement)
+            for statement in statements
+        )
+        saved = response.json()["data"]
+        expected_tags = sorted(tags, key=lambda row: row["name"]) if relationships else []
+        assert saved["tags"] == expected_tags
+        assert saved["reminder_offsets_minutes"] == ([1440, 60] if relationships else [])
+        # The success response is sent only after the transaction has committed.
+        assert (await client.get(f"/api/v1/schedules/{saved['id']}")).json()["data"] == saved
+    finally:
+        await client.aclose()
+        await app.state.database.close()
+
+
 async def test_week_capacity_uses_union_unknown_and_important(account, db_settings):
     app, client, headers = await owner_client(account, db_settings)
     try:
@@ -398,12 +443,23 @@ async def test_agenda_mutations_cannot_access_another_owner(account, db_settings
         await app.state.database.close()
 
 
-async def test_five_week_window_matches_individual_weeks(account, db_settings):
+async def test_five_week_window_matches_individual_weeks(account, db_settings, monkeypatch):
     app, client, headers = await owner_client(account, db_settings)
     try:
         await client.post("/api/v1/schedules", json=agenda_body(), headers=headers)
+        from myschedule import resources
+
+        original_expand = resources.expand
+        expanded = []
+
+        def record_expand(*args):
+            expanded.append(args[0].id)
+            return original_expand(*args)
+
+        monkeypatch.setattr(resources, "expand", record_expand)
         response = await client.get("/api/v1/overview/week?week_start=2026-11-16&weeks=5")
         assert response.status_code == 200, response.text
+        assert len(expanded) == 1
         window = response.json()["data"]
         assert window["week_end"] == "2026-12-20"
         assert len(window["days"]) == 35

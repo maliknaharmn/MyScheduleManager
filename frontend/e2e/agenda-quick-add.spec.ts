@@ -17,6 +17,7 @@ async function workspace(page: Page) {
       profile: { timezone: 'Asia/Jakarta', daily_reminder_time: '08:00', version: 1 },
       csrf_token: 'synthetic', calendar: { connection_status: 'not_implemented' },
     }) })
+    if (path === '/status') return route.fulfill({ json: envelope({ database: 'ready', google_login_configured: true }) })
     if (path === '/tags') return route.fulfill({ json: envelope([{ id: '00000000-0000-4000-8000-000000000010', name: 'Important', system_key: 'important' }]) })
     if (path === '/schedules' && request.method() === 'POST') {
       const body = request.postDataJSON()
@@ -66,7 +67,7 @@ test('ordinary agenda needs only a title, saves once, and opens cached detail wi
   await expect(page.getByRole('status')).toContainText('Agenda tersimpan')
   expect(state.saves[0]).toMatchObject({ title: 'Rapat singkat', status: 'Confirmed', category: 'Other', time: { range_start: '2026-11-16', range_end: '2026-11-16', start_local_time: '09:00', end_local_time: '10:00', end_day_offset: 0, weekdays: [1] } })
   expect(state.calls.filter((call) => call === 'GET /me')).toHaveLength(1)
-  expect(state.calls).not.toContain('GET /status')
+  expect(state.calls.filter((call) => call === 'GET /status')).toHaveLength(1)
   expect(state.calls).not.toContain('GET /schedules/new-agenda')
 })
 

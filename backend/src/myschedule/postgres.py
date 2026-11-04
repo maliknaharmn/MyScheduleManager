@@ -56,10 +56,24 @@ def connection_options(value: str, *, migration: bool = False) -> tuple[URL, dic
     return url.set(drivername="postgresql+asyncpg", query=query), arguments
 
 
-def postgres_engine(value: str, *, migration: bool = False) -> AsyncEngine:
+def postgres_engine(
+    value: str,
+    *,
+    migration: bool = False,
+    pool_size: int = 2,
+    max_overflow: int = 1,
+) -> AsyncEngine:
     url, arguments = connection_options(value, migration=migration)
     options: dict = {"pool_pre_ping": True, "connect_args": arguments, "hide_parameters": True}
-    if migration or (url.host and "-pooler." in url.host and url.host.endswith(".neon.tech")):
-        # PgBouncer owns the pool. Do not multiply pools across Cloud replicas.
+    if migration:
         options["poolclass"] = NullPool
+    else:
+        # PgBouncer pools database backends, not this process's TCP/TLS connections.
+        # Keep a small, bounded client pool for each least-privilege runtime role.
+        options.update(
+            pool_size=pool_size,
+            max_overflow=max_overflow,
+            pool_timeout=5,
+            pool_recycle=300,
+        )
     return create_async_engine(url, **options)

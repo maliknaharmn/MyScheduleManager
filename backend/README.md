@@ -45,13 +45,20 @@ Frontend Vite memproxy `/api` dan `/health` ke backend, sehingga cookie dan CSRF
 ## Endpoint yang benar-benar diimplementasikan
 
 - `GET /health/live`, `GET /health/ready`.
-- `GET /api/v1/status`: readiness tanpa secret; menandai capability MVP yang belum aktif secara jujur.
+- `GET /api/v1/status`: readiness tanpa secret; probe publik dideduplikasi dan hasilnya digunakan ulang maksimal 5 detik per proses. `/health/ready` tetap menjalankan pemeriksaan langsung atas koneksi, role dan migrasi pada setiap request. Kegagalan sesi database membuang cache status. Capability yang belum aktif tetap ditandai secara jujur.
 - `GET /api/v1/auth/google/start`, `GET /api/v1/auth/google/callback`.
 - `GET /api/v1/me`, `PATCH /api/v1/me/profile`, `POST /api/v1/auth/logout`.
 - `GET /api/v1/tags`; `GET/POST /api/v1/schedules`; `GET /api/v1/schedules/{id}`.
 - `PATCH/DELETE /api/v1/schedules/{id}`: owner + CSRF + `expected_version`; konflik 409, resource terhapus/akun lain 404. PATCH memakai seluruh field input agenda beserta versi; DELETE menerima JSON versi. Berlaku untuk seluruh seri berulang.
 - `GET /api/v1/overview/week?week_start=YYYY-MM-DD` untuk Senin–Minggu berdasarkan zona profil dan mesin kapasitas.
 - Parameter `weeks=1..5` pada overview memuat sampai 35 hari dalam satu rentang query untuk prefetch bulanan; default tetap 1 minggu. Tidak ada cache privat di cookie atau respons HTTP publik.
+
+### Koneksi dan latensi runtime
+
+- Pool aplikasi dan autentikasi tetap terpisah menurut role. Default tiap pool menyimpan 2 koneksi dengan maksimal 1 overflow: paling banyak 6 koneksi client per worker untuk kedua role. `DATABASE_POOL_SIZE` dan `DATABASE_POOL_MAX_OVERFLOW` dapat diatur secara terbatas; jangan memperbesar tanpa mengukur beban.
+- Koneksi TCP/TLS dipakai ulang, tetap melalui PgBouncer Neon untuk runtime. TLS terverifikasi, rollback dan `set_config('app.user_id', ..., true)` per transaksi tetap wajib. Pool timeout 5 detik, recycle 300 detik dan pre-ping menangani koneksi lama. Migrasi tetap memakai koneksi direct dan `NullPool`.
+- Respons simpan agenda dibangun dari row hasil INSERT/update serta relasi yang sudah divalidasi/ditulis dalam transaksi yang sama. Tidak membaca ulang relasi kosong. Respons sukses baru dikirim setelah commit; pemeriksaan sesi, CSRF, ownership dan optimistic version tidak dikurangi.
+- `Server-Timing: app;dur=...` menunjukkan waktu aplikasi tanpa SQL atau data akun. Bandingkan dengan total request browser untuk memisahkan waktu server dari transport/proxy. Benchmark lokal atau mock bukan bukti latensi produksi <1 detik.
 - `GET/POST /api/v1/notes`; `GET /api/v1/notes/{id}`; `PATCH /api/v1/notes/{id}/checklist-items/{item_id}`; `POST /api/v1/notes/{id}/complete`.
 - `PATCH/DELETE /api/v1/notes/{id}`; `POST /api/v1/notes/{id}/reopen`: owner + CSRF + `expected_version`. PATCH menerima seluruh field editable (judul, isi, target, Important, checklist). Checklist dengan `id` mempertahankan centang/timestamp; tanpa `id` membuat langkah baru; ID lama yang dihilangkan menghapus langkah. ID berulang/asing ditolak; urutan array menentukan posisi.
 - Catatan selesai harus dibuka kembali sebelum edit/toggle. Complete dengan checklist tersisa ditolak `409 CHECKLIST_INCOMPLETE` kecuali konfirmasi `allow_incomplete_checklist: true`. Complete/reopen tidak mengubah centang. Detail/mutasi menyertakan timestamp dan metadata jumlah relasi/mapping; daftar tetap 2 query data.

@@ -1,12 +1,15 @@
+import asyncio
 from datetime import date, time
+from time import monotonic
 from uuid import uuid4
 
 import httpx
 import pytest
-from sqlalchemy import select, text, update
+from sqlalchemy import event, select, text, update
 from sqlalchemy.exc import DBAPIError
 
 from myschedule.auth import SESSION_COOKIE
+from myschedule.database import Database
 from myschedule.main import create_app
 from myschedule.models import CalendarCredential, Profile, Schedule, Tag, TargetNote
 
@@ -46,6 +49,43 @@ async def test_rls_without_context_and_after_pool_reuse(account):
         async with account.database.session(context) as session:
             rows = (await session.scalars(select(Profile))).all()
             assert len(rows) == expected
+
+
+async def test_single_connection_is_reused_without_context_leaks_on_rollback_or_concurrency(
+    account, db_settings
+):
+    database = Database(
+        db_settings.model_copy(update={"database_pool_size": 1, "database_pool_max_overflow": 0})
+    )
+    connections = []
+    event.listen(database.engine.sync_engine, "connect", lambda *args: connections.append(True))
+    assert database.engine.pool is not database.auth_engine.pool
+
+    async def read(context):
+        async with database.session(context) as session:
+            await asyncio.sleep(0)
+            rows = (await session.scalars(select(Profile))).all()
+            assert len(rows) == (1 if context == account.user_id else 0)
+
+    try:
+        with pytest.raises(ValueError, match="rollback fixture"):
+            async with database.session(account.user_id) as session:
+                assert await session.get(Profile, account.user_id) is not None
+                raise ValueError("rollback fixture")
+        await asyncio.gather(*(read(context) for context in [None, account.user_id, uuid4()] * 3))
+        assert len(connections) == 1
+    finally:
+        await database.close()
+
+
+async def test_database_failure_invalidates_the_short_public_status_cache(account):
+    database = account.database
+    database._status_readiness = (monotonic() + 5, True)
+    with pytest.raises(DBAPIError):
+        async with database.session(account.user_id) as session:
+            await session.execute(text("SELECT * FROM missing_performance_test_table"))
+    assert database._status_readiness is None
+    assert await database.status_ready()
 
 
 async def test_owner_cannot_insert_or_reassign_foreign_resource(account):

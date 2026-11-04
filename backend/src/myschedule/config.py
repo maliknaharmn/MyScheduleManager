@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIRECTORY = Path(__file__).resolve().parents[2]
@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     app_origin: str = "http://localhost:5173"
     database_url: SecretStr | None = None
     auth_database_url: SecretStr | None = None
+    database_pool_size: int = Field(default=2, ge=1, le=10)
+    database_pool_max_overflow: int = Field(default=1, ge=0, le=10)
     migration_database_url: SecretStr | None = None
     test_database_url: SecretStr | None = None
     test_auth_database_url: SecretStr | None = None

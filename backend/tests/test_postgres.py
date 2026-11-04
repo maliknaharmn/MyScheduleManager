@@ -1,7 +1,7 @@
 import ssl
 
 import pytest
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import AsyncAdaptedQueuePool, NullPool
 
 from myschedule.config import Settings
 from myschedule.postgres import connection_options, postgres_engine, require_same_database
@@ -20,9 +20,34 @@ def test_neon_libpq_url_is_adapted_with_verified_tls():
     assert arguments["statement_cache_size"] == 0
 
 
-def test_neon_pooling_is_server_side():
-    engine = postgres_engine(NEON)
+@pytest.mark.parametrize("value", [NEON, "postgresql://app:fake@localhost/myschedule_test"])
+def test_runtime_reuses_a_small_bounded_client_pool(value):
+    engine = postgres_engine(value)
+    assert isinstance(engine.pool, AsyncAdaptedQueuePool)
+    assert engine.pool.size() == 2
+    assert engine.pool._max_overflow == 1
+    assert engine.pool.timeout() == 5
+    assert engine.pool._recycle == 300
+
+
+def test_runtime_pool_limits_are_configurable_without_changing_roles_or_tls():
+    engine = postgres_engine(NEON, pool_size=1, max_overflow=0)
+    assert engine.pool.size() == 1
+    assert engine.pool._max_overflow == 0
+
+
+def test_migrations_do_not_keep_a_client_pool():
+    engine = postgres_engine(NEON.replace("-pooler.", "."), migration=True)
     assert isinstance(engine.pool, NullPool)
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"database_pool_size": 0}, {"database_pool_size": 11}, {"database_pool_max_overflow": -1}],
+)
+def test_runtime_pool_configuration_is_bounded(options):
+    with pytest.raises(ValueError):
+        Settings(_env_file=None, **options)
 
 
 def test_migrations_refuse_pooler():

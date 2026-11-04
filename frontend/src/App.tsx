@@ -24,12 +24,13 @@ export function App() {
 function AppContent() {
   const queryClient = useQueryClient()
   // Revalidate identity on focus; only resource data gets a short freshness window.
-  const me = useQuery({ queryKey: ['me'], queryFn: fetchMe, staleTime: 0 })
-  const status = useQuery({ queryKey: ['status'], queryFn: () => api<ServerStatus>('/status'), enabled: !me.isPending && !me.data, staleTime: 30_000, refetchInterval: 30_000 })
+  const me = useQuery({ queryKey: ['me'], queryFn: ({ signal }) => fetchMe(signal), staleTime: 0 })
+  // Public status can start alongside identity, but can never authorize a workspace.
+  const status = useQuery({ queryKey: ['status'], queryFn: ({ signal }) => api<ServerStatus>('/status', { signal }), enabled: !me.data, staleTime: 30_000, refetchInterval: 30_000 })
   useEffect(() => {
     if (me.isSuccess && !me.data) void forgetCalendar(queryClient)
   }, [me.isSuccess, me.data, queryClient])
   if (me.data) return <WorkspaceBoundary><Suspense fallback={<SessionLoading />}><Workspace me={me.data} /></Suspense></WorkspaceBoundary>
   // Public information never depends on the API. Private routes still require me.data.
-  return <Welcome status={status.data} error={me.error ?? status.error} pending={me.isPending || me.isFetching || status.isFetching} retry={() => { void me.refetch(); void status.refetch() }} />
+  return <Welcome status={status.data} error={me.error ?? status.error} pending={me.isPending || (!me.error && status.isPending)} retry={() => { void me.refetch(); void status.refetch() }} />
 }

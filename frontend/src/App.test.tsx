@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -34,8 +34,9 @@ test('public identity, purpose and policies remain readable while identity verif
   expect(screen.getAllByRole('button', { name: 'Pengaturan cookie' })[0]).toBeVisible()
   expect(screen.queryByRole('link', { name: 'Masuk dengan Google' })).not.toBeInTheDocument()
   expect(screen.queryByText('Tambah agenda')).not.toBeInTheDocument()
-  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(fetch).toHaveBeenCalledTimes(2)
   expect(fetch.mock.calls[0][0]).toBe('/api/v1/me')
+  expect(fetch.mock.calls[1][0]).toBe('/api/v1/status')
   client.clear()
 })
 
@@ -76,6 +77,26 @@ test('ready service offers public Google sign-in while keeping each account priv
   expect(login).toHaveAttribute('href', '/api/v1/auth/google/start?return_to=/')
   expect(screen.getAllByRole('link', { name: 'Masuk dengan Google' })).toHaveLength(1)
   expect(screen.getByText(/Siapa pun bisa masuk dengan akun Google/)).toHaveTextContent('Agenda dan catatan tetap pribadi untuk setiap akun')
+  client.clear()
+})
+
+test('a background status refresh does not replace a ready login with a loading button', async () => {
+  let release!: (response: Response) => void
+  let refreshing = false
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    if (url.endsWith('/me')) return new Response(JSON.stringify({ error: { code: 'AUTH_REQUIRED' } }), { status: 401 })
+    if (refreshing) return new Promise<Response>(resolve => { release = resolve })
+    return new Response(JSON.stringify({ data: { ...status, google_login_configured: true } }))
+  }))
+  const client = setup()
+  await screen.findByRole('link', { name: 'Masuk dengan Google' })
+  refreshing = true
+  act(() => { void client.refetchQueries({ queryKey: ['status'] }) })
+  await waitFor(() => expect(client.isFetching({ queryKey: ['status'] })).toBe(1))
+  expect(screen.getByRole('link', { name: 'Masuk dengan Google' })).toBeVisible()
+  expect(screen.queryByRole('button', { name: 'Memeriksa akses…' })).not.toBeInTheDocument()
+  release(new Response(JSON.stringify({ data: { ...status, google_login_configured: true } })))
+  await waitFor(() => expect(client.isFetching({ queryKey: ['status'] })).toBe(0))
   client.clear()
 })
 
