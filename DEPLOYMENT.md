@@ -3,7 +3,8 @@
 Production frontend: **https://myschedulemanager.netlify.app**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.
-Latest production deploy ID: `6ae5c162e89b7a8e8b6117d7` (bottom cookie-consent bar, 2026-10-31).
+Latest production deploy ID: `6aeabc249c30706903302f59` (performance test, 2026-11-04).
+Bottom cookie-consent bar deploy ID: `6ae5c162e89b7a8e8b6117d7` (2026-10-31).
 Static homepage/branding deploy ID: `6ae5bb8d2407182b6dd86f30` (2026-10-31).
 Homepage ownership-tag deploy ID: `6ae335f6462dd1c3e6bcdc06` (2026-10-29).
 Public legal/cookie release deploy ID: `6ae307e299941b4da528f2e9`.
@@ -24,8 +25,8 @@ the gateway public does not remove account ownership or app authentication.
   `npm run build`, and publish directory `dist`. `frontend/package-lock.json`
   controls dependency installation. Repository-root `netlify.toml` is authoritative.
 - FastAPI remains at `https://myschedulemanager.fastapicloud.dev`.
-- Most recently inspected backend deployment: `14e1cddb-e69b-4014-b4a5-b9786b59486b`
-  (2026-11-02; source commit `b9e5aaf`). Local performance changes require a new deployment.
+- Current backend deployment: `30a83a87-178a-42b7-be3a-65c514ff153f`
+  (2026-11-04; manual source upload from commit `c6955ca`, 100% traffic).
 - Browser requests stay on the Netlify origin: `/api/*` and `/health/*` proxy to
   the same paths on FastAPI Cloud. React Router's SPA fallback comes last.
 - OAuth and session cookies are host-only (no explicit Domain), HttpOnly, Secure
@@ -82,9 +83,43 @@ the gateway public does not remove account ownership or app authentication.
 - `Server-Timing: app;dur=...` exposes only total application milliseconds, not
   SQL or account information. Measure browser request time, application duration,
   committed-save confirmation and cold/warm cases separately. Local tests and
-  read-only pool checks do not prove production p95 below one second. Production
-  verification requires deploying both components and measuring a real session
-  without creating synthetic data in a user's account.
+  read-only pool checks do not prove production p95 below one second. Both
+  components are deployed; authenticated production verification still requires
+  measuring a real session without creating synthetic data in a user's account.
+
+### Live performance test release (2026-11-04)
+
+- Pushed `perf/reduce-loading-latency` and deployed application commit `c6955ca`
+  to both existing services with the owner's approval. `main` was not merged or
+  rewritten. Backend source was a verified local archive, not a GitHub `main` build.
+- Netlify production deploy: `6aeabc249c30706903302f59`; FastAPI Cloud deployment:
+  `30a83a87-178a-42b7-be3a-65c514ff153f`. Both report successful publication.
+  Cloud maximum replicas had become 3; restored minimum 0 / maximum 1 with approval.
+  Hobby/Nano, region, database/schema, OAuth domains and secrets remain unchanged.
+- Netlify Git CD remains unconnected. FastAPI Cloud remains linked to `main`;
+  a future `main` push can replace this manually uploaded backend release.
+- Pre-release checks passed: Ruff/check-format, 134 backend tests, 26 frontend
+  unit tests, 4 static/legal tests and 100 desktop/mobile E2E tests. The production
+  build and static/legal checks passed again during deployment; published assets
+  were checked for local secrets before upload.
+- Live direct/proxied readiness returns 200; anonymous `/me`, `/schedules` and
+  `/notes` remain 401. Inspected API responses retain `no-store` and expose the
+  new total-only `Server-Timing`. OAuth callback/scopes, state/nonce/PKCE, secure
+  cookie binding, rejected unbound/replayed callbacks and bound cancellation pass.
+  Public policies return 200; the ownership tag and bundle `app-BOTVmaGS.js` are
+  present. Browser checks found no private workspace, overflow or exceptions.
+- Two browser visits measured login availability at 4,067 ms on the first observed
+  visit and 846 ms on repeat; repeat first-contentful-paint was 52 ms. These are
+  individual observations, not a cold-start classification or production p95.
+- Eight samples per API case through Netlify: public status median 398 ms
+  (284-3,047 ms), invalid-session database validation median 2,100 ms
+  (2,053-2,419 ms), and no-database liveness median 328 ms (281-1,937 ms).
+  Cached status is not a database-backed save benchmark; uncached status remained
+  around 3 seconds. Production loading/saving below one second is **not proven**.
+- Real Google sign-in, valid-session loading, agenda-save timing, second-account
+  isolation and logout still require the owner's test. No synthetic production
+  users or agendas were created. Collect request durations and `Server-Timing`,
+  never session cookies, tokens or raw private account payloads.
 
 ## Backend configuration after the domain exists
 

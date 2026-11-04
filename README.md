@@ -4,7 +4,7 @@ Kelola agenda, lihat kapasitas harian, dan pantau persiapan melalui catatan sert
 
 [Buka aplikasi](https://myschedulemanager.netlify.app/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](DEPLOYMENT.md) · [Privasi](https://myschedulemanager.netlify.app/privacy/)
 
-> **Status pemeriksaan 4 November 2026: pratinjau publik.** Frontend dan halaman legal tersedia; readiness produksi sudah **200** dengan database `ready`. Optimasi latensi sedang diuji sebelum deployment berikutnya. Ini bukan pernyataan bahwa target produksi <1 detik, seluruh alur Google atau persetujuan branding telah terverifikasi.
+> **Status pemeriksaan 4 November 2026: pratinjau publik.** Optimasi latensi commit `c6955ca` dari branch `perf/reduce-loading-latency` sudah live pada frontend dan backend; readiness produksi **200** dengan database `ready`. Kunjungan ulang halaman login terukur 846 ms, tetapi validasi sesi berbasis database masih sekitar 2,1 detik. Waktu simpan dengan sesi nyata belum diukur; target produksi <1 detik, seluruh alur Google dan persetujuan branding belum terverifikasi. Rincian: [hasil rilis performa](DEPLOYMENT.md#live-performance-test-release-2026-11-04).
 
 ## Tampilan aplikasi
 
