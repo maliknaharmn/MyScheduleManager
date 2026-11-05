@@ -57,6 +57,8 @@ export type WeekOverview = {
   days: CapacityDay[]
 }
 
+export type MonthOverview = WeekOverview & { month_start: string }
+
 export type Note = {
   id: string
   title: string

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { overviewRange } from './overview-fixture'
 
 // The account date must win over a browser on the other side of midnight.
 test.use({ timezoneId: 'America/Los_Angeles' })
@@ -14,16 +15,16 @@ async function workspace(page: Page, time = '2026-10-28T03:41:00Z') {
     if (path === '/me') return ok({ user: { id: '00000000-0000-4000-8000-000000000001', email: 'test@example.invalid', display_name: 'Test' }, profile: { timezone: 'Asia/Jakarta', daily_reminder_time: '08:00', version: 1 }, csrf_token: 'test', calendar: { connection_status: 'not_implemented' } })
     if (path === '/status') return ok({ database: 'ready', google_login_configured: false })
     if (path === '/tags') return ok([])
-    if (path === '/overview/week') {
-      const start = url.searchParams.get('week_start')!
-      state.weeks.push(start)
-      const days = Array.from({ length: Number(url.searchParams.get('weeks') ?? 1) * 7 }, (_, index) => {
+    if (path === '/overview/week' || path === '/overview/month') {
+      const { start, days: count, metadata } = overviewRange(url)
+      if (path === '/overview/week') state.weeks.push(start)
+      const days = Array.from({ length: count }, (_, index) => {
         const value = new Date(`${start}T12:00:00Z`); value.setUTCDate(value.getUTCDate() + index)
         const date = value.toISOString().slice(0, 10)
         const busy = date === '2026-10-28'
         return { date, level: busy ? 'Medium' : 'Free', known_scheduled_minutes: busy ? 570 : 0, is_partial: false, unknown_duration_count: 0, occurrence_count: busy ? 1 : 0, important_occurrence_count: 0, has_conflicts: false, occurrences: busy ? [{ occurrence_key: 'magang-28', schedule_id: 'existing-agenda', title: 'Magang', category: 'Work', status: 'Confirmed', is_important: false, starts_at: '2026-10-28T07:00:00+07:00', ends_at: '2026-10-28T16:30:00+07:00', unknown_date: null }] : [] }
       })
-      return ok({ week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
+      return ok({ ...metadata, week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
     }
     if (path === '/schedules' && req.method() === 'POST') {
       const body = req.postDataJSON()

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-// One clock for Home's greeting, current date, week and default selection.
+// One clock for Home's date/selection and automatically expiring Agenda rows.
 // Browser focus/pageshow also catch sleeping devices and iOS back-forward cache.
 export function useCurrentTime() {
   const [now, setNow] = useState(() => new Date())

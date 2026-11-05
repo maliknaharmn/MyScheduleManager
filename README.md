@@ -25,7 +25,7 @@ _Mode gelap memakai data ilustrasi yang sama. Sumber dan cara penggunaan aset di
 
 | Bagian     | Kemampuan pada rilis awal                                                                                                                                         |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Home       | Kapasitas harian, catatan penting, dan agenda mingguan. Tanggal hari ini mengikuti zona waktu profil.                                                             |
+| Home       | Kalender bulanan untuk agenda lama/mendatang, kapasitas harian, catatan penting, dan agenda mingguan. Tanggal hari ini mengikuti zona waktu profil.                |
 | Agenda     | Tambah, lihat, edit dan hapus agenda; pilihan waktu/durasi, pengulangan, kategori, status dan label. Klik tanggal untuk menambah agenda atau membuka detail hari. |
 | Catatan    | Judul, isi, target tanggal, penanda Important, pencarian dan filter status.                                                                                       |
 | Checklist  | Tambah, ubah dan urutkan langkah; centang progres; selesaikan atau buka kembali catatan secara eksplisit.                                                         |

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { overviewRange } from './overview-fixture'
 
 const weekStart = '2026-11-16'
 const times = [
@@ -45,8 +46,15 @@ test('authenticated Home follows the reference and remains usable on phone and d
       }) })
     } else if (path === '/api/v1/status') {
       await route.fulfill({ json: envelope({ phase: 'foundation', database: 'ready', google_login_configured: true, calendar_integration: 'not_implemented', capabilities: { schedules: true, notes: true, calendar_reminders: false }, auth_handshake_storage: 'single_process_memory' }) })
-    } else if (path === '/api/v1/overview/week') {
-      await route.fulfill({ json: envelope({ week_start: weekStart, week_end: '2026-11-22', timezone: 'Asia/Jakarta', days }) })
+    } else if (path === '/api/v1/overview/week' || path === '/api/v1/overview/month') {
+      const range = overviewRange(new URL(route.request().url()))
+      const entries = Array.from({ length: range.days }, (_, index) => {
+        const value = new Date(`${range.start}T12:00:00Z`)
+        value.setUTCDate(value.getUTCDate() + index)
+        const date = value.toISOString().slice(0, 10)
+        return days.find(day => day.date === date) ?? { ...days[6], date }
+      })
+      await route.fulfill({ json: envelope({ ...range.metadata, week_start: range.start, week_end: entries.at(-1)!.date, timezone: 'Asia/Jakarta', days: entries }) })
     } else if (path === '/api/v1/notes') {
       await route.fulfill({ json: envelope({ items: [{
         id: '00000000-0000-4000-8000-000000000009', title: 'Siapkan dokumen', body: null,
@@ -75,7 +83,7 @@ test('authenticated Home follows the reference and remains usable on phone and d
   await expect(page.getByRole('heading', { name: 'Agenda Mingguan' })).toBeVisible()
   await expect(page.getByText('6 jam', { exact: false }).first()).toBeVisible()
   await expect(page.getByText('Siapkan dokumen')).toBeVisible()
-  await expect(page.getByText('Kerja fokus')).toBeVisible()
+  await expect(page.locator('.app-week-panel').getByText('Kerja fokus')).toBeVisible()
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
   expect(overflow).toBe(false)
   expect(errors).toEqual([])

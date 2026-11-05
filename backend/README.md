@@ -71,6 +71,10 @@ Alur baru memakai sesi pemilik akun, CSRF untuk mutasi, dan aturan kapasitas dom
 
 Daftar agenda memuat tag/pengingat secara batch (3 query data untuk sampai 100 agenda), dan daftar catatan memuat checklist secara batch (2 query data). Jumlah ini tidak termasuk lookup sesi dan `set_config` RLS. Tes regresi di `tests/test_resources.py` memeriksa jumlah query, asosiasi relasi, urutan, dan batas daftar pada PostgreSQL test; aturan owner/CSRF tetap berlaku.
 
+`GET /api/v1/schedules?upcoming=true` mengecualikan agenda yang seluruh kemunculannya sudah selesai **sebelum** menerapkan limit. Batas memakai waktu selesai aktual atau tengah malam setelah tanggal terakhir untuk date-only/all-day, dalam zona waktu agenda; weekday berulang dan ekor overnight ikut diperhitungkan. Parameter default `false` mempertahankan daftar riwayat API. Filter tetap 3 query data batch, tidak menulis/menghapus data atau menaikkan versi. Detail dan overview tanggal lama tetap tersedia, dengan owner scope/RLS serta `no-store` seperti semula. Tidak ada schema migration atau cron penghapusan.
+
+`GET /api/v1/overview/month?month_start=YYYY-MM-01` mengembalikan enam minggu Senin-Minggu (42 hari) yang mencakup bulan dan tanggal tetangganya. `month_start` harus tanggal 1; `week_start/week_end` adalah batas grid, bukan batas bulan. Menggunakan engine kapasitas dan satu scan rentang yang sama dengan overview mingguan: profil, agenda owner-scoped dan tag Important secara batch, tanpa query per tanggal. Riwayat tidak difilter sebagai upcoming; batas akun/RLS dan `no-store` tetap berlaku. Tidak mengubah schema, data, scope OAuth atau integrasi Google Calendar.
+
 ## Tes dan kontrak
 
 ```sh

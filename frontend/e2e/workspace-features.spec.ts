@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import type { Schedule } from '../src/api/resources'
+import { overviewRange } from './overview-fixture'
 
 const id = '11111111-1111-4111-8111-111111111111'
 const account = '00000000-0000-4000-8000-000000000001'
@@ -44,13 +45,12 @@ async function fixture(page: Page, remember = true) {
       }
       return ok(state.row)
     }
-    if (path === '/overview/week') {
-      state.windows.push(url.search)
+    if (path === '/overview/week' || path === '/overview/month') {
+      if (path === '/overview/week') state.windows.push(url.search)
       await state.windowGate
-      const start = url.searchParams.get('week_start')!
-      const weeks = Number(url.searchParams.get('weeks') ?? 1)
-      if (weeks > 1) await state.prefetchGate
-      const days = Array.from({ length: weeks * 7 }, (_, index) => {
+      const { start, days: count, metadata, month } = overviewRange(url)
+      if (!month && count > 7) await state.prefetchGate
+      const days = Array.from({ length: count }, (_, index) => {
         const day = new Date(`${start}T12:00:00Z`)
         day.setUTCDate(day.getUTCDate() + index)
         const date = day.toISOString().slice(0, 10)
@@ -59,7 +59,7 @@ async function fixture(page: Page, remember = true) {
         const minutes = exists ? 60 : 0
         return { date, level: minutes ? 'Light' : 'Free', known_scheduled_minutes: minutes, is_partial: false, unknown_duration_count: 0, occurrence_count: exists ? 1 : 0, important_occurrence_count: 0, has_conflicts: false, occurrences: exists ? [{ occurrence_key: `test-${date}`, schedule_id: row.id, title: row.title, category: row.category, status: row.status, is_important: false, starts_at: `${date}T09:00:00+07:00`, ends_at: `${date}T10:00:00+07:00`, unknown_date: null }] : [] }
       })
-      return ok({ week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
+      return ok({ ...metadata, week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
     }
     return error(404, 'NOT_FOUND', 'Not found')
   })
@@ -233,7 +233,7 @@ test('agenda can be edited then deleted with confirmation, preserving tags/remin
   const state = await fixture(page)
   await page.goto('/?week=2026-11-16&date=2026-11-16')
   await expect.poll(() => cachedCount(page)).toBe(5)
-  await page.getByRole('link', { name: /Rapat perencanaan/ }).click()
+  await page.locator('.app-week-panel').getByRole('link', { name: /Rapat perencanaan/ }).click()
   await page.getByRole('link', { name: 'Edit', exact: true }).click()
   await expect(page.getByLabel('Judul agenda')).toHaveValue('Rapat perencanaan')
   await expect(page.getByLabel('Selesai', { exact: true })).toHaveValue('10:00')
@@ -302,7 +302,7 @@ test('deletion and logout invalidate already-open tabs', async ({ page, context 
   const other = await context.newPage()
   await other.goto('/?week=2026-11-16&date=2026-11-16')
   await expect(other.getByText('Rapat perencanaan', { exact: true })).toBeVisible()
-  await page.getByRole('link', { name: /Rapat perencanaan/ }).click()
+  await page.locator('.app-week-panel').getByRole('link', { name: /Rapat perencanaan/ }).click()
   await page.getByRole('button', { name: 'Hapus', exact: true }).click()
   await page.getByRole('button', { name: 'Ya, hapus agenda' }).click()
   await expect(page.getByRole('heading', { name: 'Belum ada agenda' })).toBeVisible()

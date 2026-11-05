@@ -1,0 +1,77 @@
+/* At 1440px: 1222px main - 88px gutters = 3 x 366.67px + 2 x 17px. */
+.app-home-top { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.app-calendar { position: relative; min-width: 0; padding: 18px 20px 16px; border: 1px solid var(--app-line); border-radius: 20px; background: var(--app-surface); }
+.app-calendar-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.app-calendar-heading h2 { font-size: 18px; font-weight: 750; line-height: 1.3; margin-bottom: 3px; }
+.app-calendar-heading time { color: var(--app-muted); font-size: 13px; }
+.app-calendar-controls { display: flex; }
+.app-calendar-controls button { width: 32px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--app-ink); }
+.app-calendar-controls button:hover { background: var(--app-raised); }
+.app-calendar-controls button:disabled { opacity: .55; cursor: not-allowed; }
+.app-calendar-weekdays, .app-calendar-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.app-calendar-weekdays span { display: grid; place-items: center; height: 24px; font-size: 11px; font-weight: 650; color: var(--app-muted); }
+.app-calendar-date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; height: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--app-ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.app-calendar-date > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; }
+.app-calendar-date i { flex: none; display: block; width: 3px; height: 3px; border-radius: 50%; }
+.app-calendar-date .has-agenda { background: var(--app-link); }
+.app-calendar-date.outside { color: var(--app-muted); font-weight: 400; }
+.app-calendar-date:hover { background: var(--app-raised); }
+.app-calendar-date[aria-current=date] > span { color: var(--app-link); outline: 1px solid var(--app-link); outline-offset: -1px; }
+.app-calendar-date[aria-pressed=true] > span { background: var(--app-blue); color: white; outline: 0; }
+.app-calendar-date:focus-visible, .app-calendar-controls button:focus-visible, .app-calendar-today:focus-visible { outline: 2px solid var(--app-link); outline-offset: 2px; }
+.app-calendar-summary { border-top: 1px solid var(--app-line); margin-top: 10px; padding-top: 10px; }
+.app-calendar-summary-heading > a { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
+.app-calendar-summary-heading strong { color: var(--app-ink); font-weight: 700; }
+.app-calendar-summary-heading span { flex: none; color: var(--app-muted); font-size: 11px; }
+.app-calendar-summary ul { display: grid; gap: 3px; list-style: none; padding: 0; margin: 6px 0 0; }
+.app-calendar-summary li a { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: baseline; gap: 7px; padding-left: 8px; border-left: 3px solid var(--app-link); color: var(--app-ink); font-size: 12px; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
+.app-calendar-summary li a:hover { color: var(--app-link); }
+.app-calendar-summary time { color: var(--app-muted); font-weight: 400; font-size: 11px; }
+.app-calendar-summary p { font-size: 12px; margin: 7px 0 0; }
+.app-calendar-more { display: inline-block; color: var(--app-link); font-size: 12px; margin-top: 6px; }
+.app-calendar-feedback { margin: 7px 0 0; color: var(--app-muted); font-size: 12px; }
+.app-calendar-feedback p { margin: 0; }
+.app-calendar-feedback button, .app-calendar-today { min-height: 36px; border: 0; border-radius: 8px; background: transparent; padding: 4px 0; color: var(--app-link); font-size: 12px; font-weight: 650; }
+.app-calendar-today { margin-top: 4px; }
+.app-home-top .app-capacity-card { min-height: 350px; min-width: 0; padding: 20px 22px 17px; }
+.app-home-top .app-card-top h2 { font-size: 18px; }
+.app-home-top .app-card-top svg { flex: none; }
+.app-home-top .app-capacity-date { color: white; font-size: 12px; margin: 4px 0 0; }
+.app-home-top .app-capacity-middle { gap: 16px; }
+.app-home-top .app-capacity-disc { flex-basis: 112px; width: 112px; height: 112px; border-width: 11px; }
+.app-home-top .app-capacity-disc strong { font-size: 20px; }
+.app-home-top .app-capacity-reading strong { font-size: 25px; }
+.app-home-top .app-capacity-reading span { font-size: 13px; }
+.app-home-top .app-levels { gap: 5px; }
+.app-home-top .app-levels span { font-size: 11px; min-height: 34px; }
+.app-home-top .app-note-feature { padding: 20px 21px 17px; overflow-wrap: anywhere; }
+.app-home-top .app-note-title { font-size: 20px; }
+.app-home-top .app-note-feature li { font-size: 12px; }
+@media (max-width: 1190px) and (min-width: 951px) {
+  .app-home-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-home-top .app-note-feature { grid-column: 1 / -1; }
+}
+@media (max-width: 950px) {
+  .app-home-top { grid-template-columns: minmax(0, 1fr); }
+  .app-home-top .app-capacity-card { min-height: 230px; }
+  .app-calendar { padding: 18px 20px; }
+  .app-calendar-controls button { min-width: 44px; min-height: 44px; }
+  .app-calendar-weekdays span { font-size: 12px; height: 28px; }
+  .app-calendar-date { height: 44px; font-size: 14px; }
+  .app-calendar-date > span { width: 30px; height: 30px; }
+  .app-calendar-summary-heading > a { min-height: 36px; align-items: center; font-size: 14px; }
+  .app-calendar-summary-heading span { font-size: 12px; }
+  .app-calendar-summary li a { min-height: 44px; align-items: center; grid-template-columns: 58px minmax(0, 1fr); font-size: 14px; }
+  .app-calendar-summary time, .app-calendar-summary p, .app-calendar-feedback, .app-calendar-more { font-size: 12px; }
+  .app-calendar-feedback button, .app-calendar-today, .app-calendar-more { min-height: 44px; }
+  .app-home-top .app-levels span { font-size: 12px; }
+}
+@media (max-width: 360px) {
+  .app-calendar { padding-inline: 12px; }
+  .app-home-top .app-capacity-card { padding-inline: 17px; }
+  .app-home-top .app-capacity-middle { gap: 12px; }
+  .app-home-top .app-capacity-disc { flex-basis: 96px; width: 96px; height: 96px; border-width: 9px; }
+  .app-home-top .app-capacity-disc strong { font-size: 18px; }
+  .app-home .app-week-switch { justify-content: flex-end; }
+  .app-home .app-week-switch > span { flex: 1 0 100%; }
+}

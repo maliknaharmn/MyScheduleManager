@@ -5,7 +5,8 @@ test('public Welcome hides development diagnostics and has no mobile overflow', 
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'MySchedule Manager', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled()
+  // Unlike UI fixtures, the real /status can spend up to 10s probing a cold local DB.
+  await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled({ timeout: 15_000 })
   await expect(page.getByText(/Siapa pun bisa masuk dengan akun Google/)).toBeVisible()
   await expect(page.getByText(/Kesiapan lokal|API FastAPI|Migrasi terpasang|backend\/\.env|Build 02/)).toHaveCount(0)
   await page.getByText('Apakah terhubung ke Google Calendar?').click()

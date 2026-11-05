@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import type { Schedule } from '../src/api/resources'
+import { overviewRange } from './overview-fixture'
 
 type AgendaInput = Pick<Schedule, 'title' | 'category' | 'status' | 'time'> & { tag_ids: string[]; reminder_offsets_minutes: number[] }
 
@@ -26,14 +27,14 @@ async function workspace(page: Page) {
       if (state.failSave) return route.fulfill({ status: 503, json: { error: { code: 'UNAVAILABLE', message: 'Simpan belum berhasil.' } } })
       return route.fulfill({ status: 201, json: envelope({ ...body, id: 'new-agenda', tags: [], version: 1, created_at: '2026-11-16T00:00:00Z', updated_at: '2026-11-16T00:00:00Z' }) })
     }
-    if (path === '/overview/week') {
-      const start = url.searchParams.get('week_start')!
-      const days = Array.from({ length: 7 }, (_, index) => {
+    if (path === '/overview/week' || path === '/overview/month') {
+      const { start, days: count, metadata } = overviewRange(url)
+      const days = Array.from({ length: count }, (_, index) => {
         const date = new Date(`${start}T12:00:00Z`)
         date.setUTCDate(date.getUTCDate() + index)
         return { date: date.toISOString().slice(0, 10), level: 'Free', known_scheduled_minutes: 0, is_partial: false, unknown_duration_count: 0, occurrence_count: 0, important_occurrence_count: 0, has_conflicts: false, occurrences: [] }
       })
-      return route.fulfill({ json: envelope({ week_start: start, week_end: days[6].date, timezone: 'Asia/Jakarta', days }) })
+      return route.fulfill({ json: envelope({ ...metadata, week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days }) })
     }
     if (path === '/notes' || path === '/schedules') return route.fulfill({ json: envelope({ items: [], has_more: false }) })
     // In particular: a redundant detail read must not be needed to display a successful save.

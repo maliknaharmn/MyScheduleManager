@@ -75,6 +75,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/overview/month": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Month Overview */
+        get: operations["month_overview_api_v1_overview_month_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes": {
         parameters: {
             query?: never;
@@ -447,6 +464,11 @@ export interface components {
             data: components["schemas"]["MeData"];
             meta: components["schemas"]["ResponseMeta"];
         };
+        /** EnvelopeResponse[MonthView] */
+        EnvelopeResponse_MonthView_: {
+            data: components["schemas"]["MonthView"];
+            meta: components["schemas"]["ResponseMeta"];
+        };
         /** EnvelopeResponse[NoteDetailView] */
         EnvelopeResponse_NoteDetailView_: {
             data: components["schemas"]["NoteDetailView"];
@@ -531,6 +553,28 @@ export interface components {
             /** Csrf Token */
             csrf_token: string;
             calendar: components["schemas"]["CalendarStatus"];
+        };
+        /** MonthView */
+        MonthView: {
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /**
+             * Week End
+             * Format: date
+             */
+            week_end: string;
+            /** Timezone */
+            timezone: string;
+            /** Days */
+            days: components["schemas"]["DayView"][];
+            /**
+             * Month Start
+             * Format: date
+             */
+            month_start: string;
         };
         /** NoteDetailView */
         NoteDetailView: {
@@ -1023,6 +1067,7 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                upcoming?: boolean;
             };
             header?: never;
             path?: never;
@@ -1516,6 +1561,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvelopeResponse_WeekView_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    month_overview_api_v1_overview_month_get: {
+        parameters: {
+            query: {
+                month_start: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvelopeResponse_MonthView_"];
                 };
             };
             /** @description Bad Request */

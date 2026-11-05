@@ -1,7 +1,7 @@
 """The first workspace slice uses real owner-scoped Postgres rows."""
 
 import asyncio
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 import httpx
@@ -210,6 +210,7 @@ async def test_new_private_endpoints_reject_unauthenticated_access():
                 "/api/v1/schedules",
                 "/api/v1/notes",
                 "/api/v1/overview/week?week_start=2026-11-16",
+                "/api/v1/overview/month?month_start=2026-11-01",
             ):
                 assert (await client.get(path)).status_code == 401
     finally:
@@ -492,6 +493,273 @@ async def test_concurrent_agenda_edits_only_accept_one_expected_version(account,
         )
         assert sorted(response.status_code for response in results) == [200, 409]
         assert (await client.get(path)).json()["data"]["version"] == 2
+    finally:
+        await client.aclose()
+        await app.state.database.close()
+
+
+def freeze_agenda_clock(monkeypatch, value="2026-11-16T03:00:00+00:00"):
+    from myschedule import resources
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime.fromisoformat(value).astimezone(tz or UTC)
+
+    monkeypatch.setattr(resources, "datetime", Clock)
+
+
+async def test_upcoming_filter_keeps_ongoing_and_future_without_deleting_history(
+    account, db_settings, monkeypatch
+):
+    freeze_agenda_clock(monkeypatch)
+    app, client, headers = await owner_client(account, db_settings)
+    pattern = {**agenda_body()["time"], "range_end": "2026-11-16"}
+    cases = [
+        ("Selesai tepat sekarang", pattern, False),
+        ("Masih berlangsung", {**pattern, "end_local_time": "11:00"}, True),
+        (
+            "Nanti hari ini",
+            {**pattern, "start_local_time": "11:00", "end_local_time": "12:00"},
+            True,
+        ),
+        ("Berulang pekan depan", {**pattern, "range_end": "2026-11-23"}, True),
+        (
+            "Hari berulang terakhir sudah lewat",
+            {**pattern, "range_start": "2026-11-14", "range_end": "2026-11-17", "weekdays": [6]},
+            False,
+        ),
+        (
+            "Ekor lintas tengah malam",
+            {
+                **pattern,
+                "range_start": "2026-11-15",
+                "range_end": "2026-11-15",
+                "weekdays": [7],
+                "start_local_time": "23:00",
+                "end_local_time": "11:00",
+                "end_day_offset": 1,
+            },
+            True,
+        ),
+        (
+            "Interval selesai",
+            {
+                "mode": "timed_interval",
+                "timezone": "Asia/Jakarta",
+                "starts_at": "2026-11-15T23:00:00+07:00",
+                "ends_at": "2026-11-16T10:00:00+07:00",
+            },
+            False,
+        ),
+        (
+            "Interval berlangsung",
+            {
+                "mode": "timed_interval",
+                "timezone": "Asia/Jakarta",
+                "starts_at": "2026-11-15T23:00:00+07:00",
+                "ends_at": "2026-11-16T11:00:00+07:00",
+            },
+            True,
+        ),
+    ]
+    for mode in ("date_only", "all_day"):
+        for day, zone, active in (
+            ("2026-11-16", "Asia/Jakarta", True),
+            ("2026-11-15", "Asia/Jakarta", False),
+            ("2026-11-15", "America/Los_Angeles", True),
+            ("2026-11-15", "Pacific/Kiritimati", False),
+        ):
+            cases.append(
+                (
+                    f"{mode} {day} {zone}",
+                    {"mode": mode, "timezone": zone, "range_start": day, "range_end": day},
+                    active,
+                )
+            )
+        cases.append(
+            (
+                f"{mode} hari berulang terakhir sudah lewat",
+                {
+                    "mode": mode,
+                    "timezone": "Asia/Jakarta",
+                    "range_start": "2026-11-14",
+                    "range_end": "2026-11-17",
+                    "weekdays": [6],
+                },
+                False,
+            )
+        )
+    try:
+        saved = {}
+        for title, time_value, _ in cases:
+            response = await client.post(
+                "/api/v1/schedules",
+                json={**agenda_body(), "title": title, "time": time_value},
+                headers=headers,
+            )
+            assert response.status_code == 201, response.text
+            saved[title] = response.json()["data"]
+        response = await client.get("/api/v1/schedules?upcoming=true&limit=100")
+        assert response.status_code == 200, response.text
+        assert response.headers["cache-control"] == "no-store"
+        upcoming = response.json()["data"]
+        assert {row["title"] for row in upcoming["items"]} == {
+            title for title, _, active in cases if active
+        }
+        assert upcoming["has_more"] is False
+        history = (await client.get("/api/v1/schedules?limit=100")).json()["data"]["items"]
+        assert len(history) == len(cases)
+        # History is unchanged, still addressable, and still contributes to its old date.
+        ended = saved["Selesai tepat sekarang"]
+        assert (await client.get(f"/api/v1/schedules/{ended['id']}")).json()["data"] == ended
+        week = (await client.get("/api/v1/overview/week?week_start=2026-11-16")).json()["data"]
+        assert ended["id"] in {item["schedule_id"] for item in week["days"][0]["occurrences"]}
+        app.dependency_overrides[current_identity] = lambda: Identity(
+            uuid4(), uuid4(), "other@example.invalid", "Another account", token_hash(account.token)
+        )
+        isolated = (await client.get("/api/v1/schedules?upcoming=true")).json()["data"]
+        assert isolated == {"items": [], "has_more": False}
+    finally:
+        await client.aclose()
+        await app.state.database.close()
+
+
+async def test_upcoming_filters_before_limit_and_keeps_relationship_queries_bounded(
+    account, db_settings, monkeypatch
+):
+    freeze_agenda_clock(monkeypatch)
+    app, client, headers = await owner_client(account, db_settings)
+    try:
+        future = (
+            await client.post("/api/v1/schedules", json=agenda_body(), headers=headers)
+        ).json()["data"]
+        async with account.database.session(account.user_id) as session:
+            session.add_all(
+                Schedule(
+                    user_id=account.user_id,
+                    title=f"Riwayat {index}",
+                    category="Work",
+                    status="Confirmed",
+                    time_mode="date_only",
+                    timezone="Asia/Jakarta",
+                    range_start=date(2020, 1, 1),
+                    range_end=date(2020, 1, 1),
+                )
+                for index in range(105)
+            )
+        statements = []
+
+        def record(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        engine = app.state.database.engine.sync_engine
+        event.listen(engine, "before_cursor_execute", record)
+        try:
+            response = await client.get("/api/v1/schedules?upcoming=true&limit=1")
+        finally:
+            event.remove(engine, "before_cursor_execute", record)
+        assert response.status_code == 200, response.text
+        assert len(statements) == 4  # RLS + list + batched tags/reminders; no per-agenda queries.
+        assert response.json()["data"] == {"items": [future], "has_more": False}
+        await client.post("/api/v1/schedules", json=agenda_body(), headers=headers)
+        assert (await client.get("/api/v1/schedules?upcoming=true&limit=1")).json()["data"][
+            "has_more"
+        ]
+        assert (await client.get("/api/v1/schedules?upcoming=invalid")).status_code == 422
+    finally:
+        await client.aclose()
+        await app.state.database.close()
+
+
+@pytest.mark.parametrize(
+    ("month", "first", "last"),
+    [
+        ("2026-11-01", "2026-10-26", "2026-12-06"),
+        ("2028-02-01", "2028-01-31", "2028-03-12"),
+        ("2026-12-01", "2026-11-30", "2027-01-10"),
+    ],
+)
+async def test_calendar_month_is_six_monday_first_weeks(account, db_settings, month, first, last):
+    app, client, _ = await owner_client(account, db_settings)
+    try:
+        response = await client.get(f"/api/v1/overview/month?month_start={month}")
+        assert response.status_code == 200, response.text
+        assert response.headers["cache-control"] == "no-store"
+        data = response.json()["data"]
+        assert data["month_start"] == month
+        assert data["week_start"] == first
+        assert data["week_end"] == last
+        assert data["timezone"] == "Asia/Jakarta"
+        assert len(data["days"]) == 42
+        assert all(day["occurrence_count"] == 0 for day in data["days"])
+        for invalid in ("2026-11-05", "bad-date", "9999-12-01"):
+            assert (
+                await client.get(f"/api/v1/overview/month?month_start={invalid}")
+            ).status_code == 422
+    finally:
+        await client.aclose()
+        await app.state.database.close()
+
+
+async def test_calendar_month_retains_history_matches_capacity_and_is_owner_scoped(
+    account, db_settings, monkeypatch
+):
+    freeze_agenda_clock(monkeypatch)
+    app, client, headers = await owner_client(account, db_settings)
+    try:
+        body = agenda_body()
+        body["time"] = {
+            **body["time"],
+            "range_start": "2026-11-01",
+            "range_end": "2026-11-01",
+            "weekdays": [7],
+            "start_local_time": "23:00",
+            "end_local_time": "02:00",
+            "end_day_offset": 1,
+        }
+        saved = (await client.post("/api/v1/schedules", json=body, headers=headers)).json()["data"]
+        assert (await client.get("/api/v1/schedules?upcoming=true")).json()["data"]["items"] == []
+        statements = []
+
+        def record(connection, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        engine = app.state.database.engine.sync_engine
+        event.listen(engine, "before_cursor_execute", record)
+        try:
+            response = await client.get("/api/v1/overview/month?month_start=2026-11-01")
+        finally:
+            event.remove(engine, "before_cursor_execute", record)
+        assert response.status_code == 200, response.text
+        assert len(statements) == 4  # RLS + profile + bounded scan + batched Important IDs.
+        data = response.json()["data"]
+        by_date = {day["date"]: day for day in data["days"]}
+        assert by_date["2026-11-01"]["known_scheduled_minutes"] == 60
+        assert by_date["2026-11-02"]["known_scheduled_minutes"] == 120
+        for day in ("2026-11-01", "2026-11-02"):
+            assert by_date[day]["occurrences"][0]["schedule_id"] == saved["id"]
+        for index in range(0, 42, 7):
+            start = data["days"][index]["date"]
+            week = (await client.get(f"/api/v1/overview/week?week_start={start}")).json()["data"]
+            assert week["days"] == data["days"][index : index + 7]
+        app.dependency_overrides[current_identity] = lambda: Identity(
+            uuid4(), uuid4(), "other@example.invalid", "Another account", token_hash(account.token)
+        )
+        # A different account without a profile fails closed; it never sees this history.
+        assert (
+            await client.get("/api/v1/overview/month?month_start=2026-11-01")
+        ).status_code == 503
+        app.dependency_overrides.clear()
+        assert (await client.get(f"/api/v1/schedules/{saved['id']}")).json()["data"] == saved
+        await client.request(
+            "DELETE",
+            f"/api/v1/schedules/{saved['id']}",
+            json={"expected_version": 1},
+            headers=headers,
+        )
+        cleared = (await client.get("/api/v1/overview/month?month_start=2026-11-01")).json()["data"]
+        assert all(day["occurrence_count"] == 0 for day in cleared["days"])
     finally:
         await client.aclose()
         await app.state.database.close()

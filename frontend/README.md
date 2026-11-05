@@ -47,6 +47,24 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 - Create/edit/delete menghapus snapshot kapasitas lama dan memperbarui cache resource terkait. BroadcastChannel menyinkronkan invalidasi antar-tab bila tersedia. Logout dan sesi yang terdeteksi berakhir menghapus cache privat; snapshot kedaluwarsa/akun lain tidak ditampilkan. Jika storage diblokir/penuh, aplikasi tetap memakai memori dan API.
 - `e2e/workspace-features.spec.ts` menguji CRUD, konflik versi, konfirmasi hapus, tema/cookie, prefetch empat minggu berikutnya, cache saat reload, TTL, pemisahan akun, storage diblokir dan pembersihan logout. Ini emulasi Chromium, belum menggantikan pengujian Safari/iPhone fisik.
 
+## Daftar agenda mendatang
+
+- Menu **Agenda** hanya memuat agenda mendatang atau yang masih berlangsung, lewat `GET /schedules?upcoming=true`. Backend memfilter sebelum batas 100 agenda aktif yang terakhir ditambahkan; pencarian/status berlaku pada daftar terbatas tersebut. Tanggal agenda berulang menunjukkan kemunculan aktif/berikutnya, bukan awal seri yang sudah lewat.
+- Baris otomatis hilang setelah waktu selesai, mengikuti zona waktu yang tersimpan pada agenda, bukan zona browser. Agenda tanpa jam/seharian bertahan sampai akhir tanggal terakhir yang dipilih; agenda berulang bertahan sampai kemunculan terakhirnya benar-benar selesai, termasuk ekor lintas tengah malam.
+- Jam tampilan diperiksa setiap pergantian menit serta saat tab kembali fokus/terlihat. Daftar biasa tidak dipolling; bila daftar masih memiliki data di luar batas 100, penghilangan baris memicu pengisian ulang lewat request baca.
+- Ini **bukan penghapusan data**: versi, tag, pengingat, detail, riwayat Home/Detail hari dan kapasitas pada tanggal lama tidak berubah. Tidak ada request DELETE/mutasi otomatis. Hapus manual tetap memakai konfirmasi dan soft delete.
+- Riwayat dapat dibuka lewat kalender bulanan Home atau Detail hari; hilang dari menu Agenda tidak berarti hilang dari kalender.
+- `agenda-time.test.ts`, `e2e/agenda-upcoming.spec.ts` dan tes PostgreSQL memeriksa batas selesai/tengah malam, zona waktu, weekday berulang, pengisian ulang daftar, pemisahan akun dan riwayat yang tetap tersedia.
+
+## Kalender bulanan Home
+
+- Mengikuti referensi UI pemilik: **Kalender | Kapasitas tanggal ini | Catatan penting** pada desktop. Kolom menumpuk pada layar sempit; warna cobalt/lime, ikon, tema dan alur yang sudah ada dipertahankan. Angka/tingkat kapasitas tetap hasil perhitungan API, bukan data pada gambar referensi.
+- Kalender Senin-Minggu berisi 42 tanggal termasuk tanggal bulan tetangga, navigasi bulan/tahun lewat keyboard, penanda hari beragenda, tanggal dipilih dan hari ini yang terpisah. Panah keyboard memindahkan fokus; Enter/Space memilih; Home/End berpindah dalam minggu; PageUp/PageDown berpindah bulan dan Shift mempercepat satu tahun.
+- Memilih tanggal memperbarui minggu dan kapasitas melalui URL yang dapat dibagikan. Tanggal pada sapaan tetap hari ini dalam zona profil. Ketika hari ini dipilih, ringkasan menunjukkan besok seperti referensi; pada tanggal lain, ringkasan menampilkan tanggal yang dipilih (atau awal bulan yang sedang ditelusuri).
+- `GET /overview/month?month_start=YYYY-MM-01` memuat grid bulan lewat satu request setelah data minggu tersedia; tidak menghalangi minggu aktif. Ringkasan membatasi dua agenda dengan tautan ke Detail hari, termasuk riwayat, agenda tanpa jam dan ekor lintas tengah malam. Loading/error/retry dibedakan dari tanggal yang benar-benar kosong.
+- Cache bulan hanya di memori, scoped menurut akun/zona/bulan, fresh 60 detik; tidak menambah penyimpanan persisten. Minggu dari bulan yang masih fresh dapat dipakai ketika tanggal diklik. Edit/hapus agenda mereset bulan dan minggu; logout/sesi berakhir membatalkan request serta membuang cache privat. Ini kalender internal, **bukan sinkronisasi Google Calendar**.
+- `calendar-date.test.ts` dan `e2e/home-calendar.spec.ts` menguji perhitungan bulan/tahun kabisat, keyboard, riwayat, layout, penanda, retry, logout/akun lain dan invalidasi hapus. Pemeriksaan visual memakai data sintetis lokal, bukan data akun produksi.
+
 ## Catatan dan checklist
 
 - Daftar menyediakan pencarian judul/isi dan filter belum selesai, lewat target, selesai, semua. Filter/pencarian berlaku pada maksimal 100 catatan yang dimuat; batas ditampilkan secara eksplisit. Target memakai zona profil, bukan zona browser.

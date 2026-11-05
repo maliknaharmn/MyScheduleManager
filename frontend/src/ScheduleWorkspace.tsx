@@ -10,40 +10,21 @@ import { useForm } from 'react-hook-form'
 import { api, ApiError } from './api/client'
 import type { Me } from './api/client'
 import type { CapacityDay, CapacityLevel, ListResult, Note, Occurrence, Schedule, Tag, WeekOverview } from './api/resources'
-import { clockMinutes, endAfter, suggestedStart } from './agenda-time'
+import { clockMinutes, endAfter, nextAgendaDate, suggestedStart } from './agenda-time'
 import { ThemeSwitch } from './theme'
 import { agendaChanged, useCalendarTabSync, useWeek } from './week-cache'
 import { PageHeading } from './components/PageHeading'
 import { NotesList, NoteForm, NoteEditor, NoteDetailScreen } from './NotesWorkspace'
 import { useCurrentTime } from './use-current-time'
+import { HomeCalendar } from './HomeCalendar'
+import { addDays, calendarDate as dayDate, dateIso, formatDay, localIso, mondayOf, todayInZone } from './calendar-date'
 
 type ShellProps = { me: Me; settings: ReactNode; logout: () => void; logoutPending: boolean; logoutError: string }
 
-function dayDate(iso: string) { return new Date(`${iso}T12:00:00Z`) }
-function dateIso(value: Date) { return value.toISOString().slice(0, 10) }
 function validIso(value: string | null): value is string {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const parsed = dayDate(value)
   return !Number.isNaN(parsed.getTime()) && dateIso(parsed) === value
-}
-function addDays(iso: string, amount: number) {
-  const value = dayDate(iso)
-  value.setUTCDate(value.getUTCDate() + amount)
-  return dateIso(value)
-}
-function todayInZone(zone: string, now = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
-  return `${get('year')}-${get('month')}-${get('day')}`
-}
-function mondayOf(iso: string) { return addDays(iso, -((dayDate(iso).getUTCDay() + 6) % 7)) }
-function formatDay(iso: string, options: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('id-ID', { timeZone: 'UTC', ...options }).format(dayDate(iso))
-}
-function localIso(timestamp: string, zone: string) {
-  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(timestamp))
-  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
-  return `${get('year')}-${get('month')}-${get('day')}`
 }
 function formatTime(timestamp: string, zone: string) {
   return new Intl.DateTimeFormat('id-ID', { timeZone: zone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(timestamp))
@@ -134,6 +115,7 @@ function CapacityCard({ day, selectedDate, failed }: { day: CapacityDay | undefi
   if (!day) return <section className="app-capacity-card app-capacity-loading" aria-label={failed ? 'Kapasitas belum tersedia' : 'Kapasitas sedang dimuat'}><span>{failed ? 'Kapasitas belum tersedia' : 'Memuat kapasitas…'}</span></section>
   return <Link to={`/day/${selectedDate}`} className="app-capacity-card" aria-label={`Lihat detail kapasitas ${formatDay(selectedDate, { dateStyle: 'full' })}`}>
     <div className="app-card-top"><h2>Kapasitas tanggal ini</h2><ChevronRight size={21} aria-hidden /></div>
+    <p className="app-capacity-date">{formatDay(selectedDate, { weekday: 'short', day: 'numeric', month: 'short' })} · {day.occurrence_count} agenda</p>
     <div className="app-capacity-middle">
       <div className="app-capacity-disc"><strong>{duration(day.known_scheduled_minutes)}</strong><span>diketahui</span></div>
       <div className="app-capacity-reading"><strong>{day.is_partial ? `${day.level} sementara` : day.level}</strong><span>{day.is_partial ? `${day.unknown_duration_count} agenda tanpa durasi` : day.known_scheduled_minutes === 0 ? 'Belum ada jam terisi di aplikasi' : `${day.occurrence_count} agenda pada tanggal ini`}</span></div>
@@ -225,6 +207,7 @@ function Home({ me }: { me: Me }) {
       <div className="app-header-actions"><button onClick={() => navigate('/agenda?focus=search')} aria-label="Cari agenda"><Search size={22} aria-hidden /></button><Link to="/notes" aria-label="Buka catatan"><ListTodo size={22} aria-hidden /></Link></div>
     </header>
     <div className="app-home-top">
+      <HomeCalendar me={me} today={today} selectedDate={selectedDate} week={overview.data} weekFailed={overview.isError} onSelect={date => setParams(date === today ? {} : { week: mondayOf(date), date })} />
       <CapacityCard day={selected} selectedDate={selectedDate} failed={overview.isError} />
       {notes.isPending ? <section className="app-note-feature" role="status"><h2>Catatan penting</h2><p>Memuat catatan…</p></section> : notes.isError ? <section className="app-note-feature"><h2>Catatan penting</h2><p role="alert">Catatan belum dapat dimuat.</p><button onClick={() => void notes.refetch()}>Coba lagi</button></section> : <ImportantNote note={important} />}
     </div>
@@ -255,19 +238,27 @@ function DayScreen({ me }: { me: Me }) {
 
 function AgendaList() {
   const [params] = useSearchParams()
+  const now = useCurrentTime()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const searchRef = useRef<HTMLInputElement>(null)
   useEffect(() => { if (params.get('focus') === 'search') searchRef.current?.focus() }, [params])
-  const schedules = useQuery({ queryKey: ['schedules'], queryFn: () => api<ListResult<Schedule>>('/schedules?limit=100') })
-  const rows = (schedules.data?.items ?? []).filter((row) => row.title.toLowerCase().includes(search.toLowerCase()) && (status === 'all' || row.status === status))
-  const dateOf = (row: Schedule) => row.time.range_start ?? (row.time.starts_at ? localIso(row.time.starts_at, row.time.timezone) : '')
+  const schedules = useQuery({ queryKey: ['schedules', 'upcoming'], queryFn: ({ signal }) => api<ListResult<Schedule>>('/schedules?limit=100&upcoming=true', { signal }) })
+  const upcoming = (schedules.data?.items ?? []).map((row) => ({ row, date: nextAgendaDate(row.time, now) })).filter((entry): entry is { row: Schedule; date: string } => entry.date !== null)
+  const expired = !!schedules.data && upcoming.length < schedules.data.items.length
+  useEffect(() => {
+    // Refill a capped list when the clock removes a row; ordinary lists need no polling.
+    if (expired && schedules.data?.has_more) void schedules.refetch()
+  }, [now, expired, schedules.data?.has_more, schedules.refetch])
+  const rows = upcoming.filter(({ row }) => row.title.toLowerCase().includes(search.toLowerCase()) && (status === 'all' || row.status === status)).map(({ row }) => row)
+  const dates = new Map(upcoming.map(({ row, date }) => [row.id, date]))
+  const dateOf = (row: Schedule) => dates.get(row.id) ?? ''
   rows.sort((a, b) => dateOf(a).localeCompare(dateOf(b)))
-  return <div className="app-content-page"><PageHeading title="Agenda" description="Semua komitmen yang sudah kamu catat." action={<Link className="app-primary" to="/agenda/new"><Plus size={18} aria-hidden />Agenda</Link>} />
+  return <div className="app-content-page"><PageHeading title="Agenda" description="Agenda mendatang dan yang masih berlangsung. Riwayat tetap tersimpan." action={<Link className="app-primary" to="/agenda/new"><Plus size={18} aria-hidden />Agenda</Link>} />
     <div className="app-filter-bar"><label><Search size={18} aria-hidden /><span className="sr-only">Cari judul agenda</span><input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari judul agenda" /></label><select aria-label="Filter status" value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">Semua status</option><option value="Confirmed">Confirmed</option><option value="Tentative">Tentative</option></select></div>
     {schedules.isError && <div className="app-alert" role="alert">Agenda belum dapat dimuat. <button onClick={() => void schedules.refetch()}>Coba lagi</button></div>}
-    <div className="app-list-panel">{schedules.isPending ? <p>Memuat agenda…</p> : rows.length ? rows.map((row) => <Link to={`/agenda/${row.id}`} className="app-list-item" key={row.id}><div><strong>{row.tags.some((tag) => tag.system_key === 'important') && <Star size={15} fill="currentColor" aria-label="Important" />} {row.title}</strong><span>{dateOf(row) ? formatDay(dateOf(row), { dateStyle: 'medium' }) : 'Tanggal belum tersedia'} · {categoryName(row.category)} · {row.status}</span></div><ChevronRight size={19} aria-hidden /></Link>) : <div className="app-empty"><h2>{search || status !== 'all' ? 'Tidak ada hasil' : 'Belum ada agenda'}</h2><p>{search || status !== 'all' ? 'Ubah pencarian atau filter.' : 'Mulai dari satu agenda yang sudah pasti.'}</p>{!search && status === 'all' && <Link to="/agenda/new">Tambah agenda <ArrowRight size={16} aria-hidden /></Link>}</div>}</div>
-    {schedules.data?.has_more && <p className="app-limited">Daftar ini menampilkan 100 agenda terbaru; pencarian di sini belum mencakup sisanya.</p>}
+    <div className="app-list-panel">{schedules.isPending ? <p>Memuat agenda…</p> : rows.length ? rows.map((row) => <Link to={`/agenda/${row.id}`} className="app-list-item" key={row.id}><div><strong>{row.tags.some((tag) => tag.system_key === 'important') && <Star size={15} fill="currentColor" aria-label="Important" />} {row.title}</strong><span>{dateOf(row) ? formatDay(dateOf(row), { dateStyle: 'medium' }) : 'Tanggal belum tersedia'} · {categoryName(row.category)} · {row.status}</span></div><ChevronRight size={19} aria-hidden /></Link>) : <div className="app-empty"><h2>{search || status !== 'all' ? 'Tidak ada hasil' : 'Belum ada agenda'}</h2><p>{search || status !== 'all' ? 'Ubah pencarian atau filter.' : 'Tidak ada agenda mendatang atau yang masih berlangsung.'}</p>{!search && status === 'all' && <Link to="/agenda/new">Tambah agenda <ArrowRight size={16} aria-hidden /></Link>}</div>}</div>
+    {schedules.data?.has_more && <p className="app-limited">Daftar ini menampilkan 100 agenda aktif yang terakhir ditambahkan; pencarian di sini belum mencakup sisanya.</p>}
   </div>
 }
 

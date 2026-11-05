@@ -135,6 +135,16 @@
               "default": 50,
               "title": "Limit"
             }
+          },
+          {
+            "name": "upcoming",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Upcoming"
+            }
           }
         ],
         "responses": {
@@ -751,6 +761,124 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EnvelopeResponse_WeekView_"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/overview/month": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Month Overview",
+        "operationId": "month_overview_api_v1_overview_month_get",
+        "security": [
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "month_start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Month Start"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvelopeResponse_MonthView_"
                 }
               }
             }
@@ -3059,6 +3187,23 @@
         ],
         "title": "EnvelopeResponse[MeData]"
       },
+      "EnvelopeResponse_MonthView_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MonthView"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "EnvelopeResponse[MonthView]"
+      },
       "EnvelopeResponse_NoteDetailView_": {
         "properties": {
           "data": {
@@ -3318,6 +3463,46 @@
           "calendar"
         ],
         "title": "MeData"
+      },
+      "MonthView": {
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "week_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Week End"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/DayView"
+            },
+            "type": "array",
+            "title": "Days"
+          },
+          "month_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Month Start"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "week_start",
+          "week_end",
+          "timezone",
+          "days",
+          "month_start"
+        ],
+        "title": "MonthView"
       },
       "NoteDetailView": {
         "properties": {

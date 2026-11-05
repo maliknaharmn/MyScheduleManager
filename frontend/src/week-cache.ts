@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { api, ApiError, type Me } from './api/client'
-import type { ListResult, Note, NoteDetail, WeekOverview } from './api/resources'
+import type { ListResult, MonthOverview, Note, NoteDetail, WeekOverview } from './api/resources'
 import { allowsStorage, useStorageChoice } from './storage-consent'
+import { monthDates } from './calendar-date'
 
 const DB_NAME = 'myschedule-week-cache-v1'
 const STORE = 'weeks'
@@ -118,11 +119,12 @@ export async function notesChanged(client: QueryClient, row: NoteDetail | null, 
 
 export async function agendaChanged(client: QueryClient, broadcast = true) {
   const clear = clearWeekCache()
-  await client.cancelQueries({ predicate: (query) => ['week', 'week-prefetch'].includes(String(query.queryKey[0])) })
+  await client.cancelQueries({ predicate: (query) => ['week', 'week-prefetch', 'month'].includes(String(query.queryKey[0])) })
   client.removeQueries({ queryKey: ['week-prefetch'] })
   await clear
   // Old capacity totals must not survive edits/deletes. Refetch active views only.
   void client.resetQueries({ queryKey: ['week'] })
+  void client.resetQueries({ queryKey: ['month'] })
   void client.invalidateQueries({ queryKey: ['schedules'] })
   if (broadcast) notifyTabs('changed')
 }
@@ -136,6 +138,32 @@ export async function forgetCalendar(client: QueryClient, broadcast = false) {
 }
 
 function weekKey(me: Me, start: string) { return ['week', me.user.id, me.profile.timezone, start] }
+
+export function useMonth(me: Me, month: string, enabled: boolean) {
+  const client = useQueryClient()
+  return useQuery({
+    // Month markers are memory-only; optional disk storage keeps its existing scope.
+    queryKey: ['month', me.user.id, me.profile.timezone, month],
+    staleTime: 60_000, gcTime: 24 * 60 * 60 * 1000, enabled,
+    queryFn: async ({ signal }) => {
+      const epoch = generation
+      let value: MonthOverview
+      try {
+        value = await api<MonthOverview>(`/overview/month?month_start=${month}`, { signal })
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          client.setQueryData<Me | null>(['me'], null)
+          void clearWeekCache()
+        }
+        throw error
+      }
+      if (signal.aborted || epoch !== generation) throw new DOMException('Calendar request superseded', 'AbortError')
+      const dates = monthDates(month)
+      if (value.month_start !== month || value.timezone !== me.profile.timezone || value.week_start !== dates[0] || value.week_end !== dates[41] || value.days.length !== 42 || value.days.some((day, index) => day.date !== dates[index])) throw new Error('Rentang atau zona waktu kalender tidak sesuai. Coba lagi.')
+      return value
+    },
+  })
+}
 
 export function splitWeeks(window: WeekOverview): WeekOverview[] {
   const weeks: WeekOverview[] = []

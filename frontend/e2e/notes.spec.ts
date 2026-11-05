@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import type { NoteDetail } from '../src/api/resources'
+import { overviewRange } from './overview-fixture'
 
 const id = '22222222-2222-4222-8222-222222222222'
 const initial = (): NoteDetail => ({
@@ -22,14 +23,14 @@ async function fixture(page: Page) {
     if (path === '/me') return ok({ user: { id: '00000000-0000-4000-8000-000000000001', email: 'test@example.invalid', display_name: 'Test' }, profile: { timezone: 'Asia/Jakarta', daily_reminder_time: '08:00', version: 1 }, csrf_token: 'test', calendar: { connection_status: 'not_implemented' } })
     if (path === '/status') return ok({ database: 'ready', google_login_configured: false })
     if (path === '/tags') return ok([])
-    if (path === '/overview/week') {
+    if (path === '/overview/week' || path === '/overview/month') {
       state.calendarCalls++
-      const start = url.searchParams.get('week_start')!
-      const days = Array.from({ length: 35 }, (_, index) => {
+      const { start, days: count, metadata } = overviewRange(url)
+      const days = Array.from({ length: count }, (_, index) => {
         const date = new Date(`${start}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + index)
         return { date: date.toISOString().slice(0, 10), level: 'Free', known_scheduled_minutes: 0, is_partial: false, unknown_duration_count: 0, occurrence_count: 0, important_occurrence_count: 0, has_conflicts: false, occurrences: [] }
       })
-      return ok({ week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
+      return ok({ ...metadata, week_start: start, week_end: days.at(-1)!.date, timezone: 'Asia/Jakarta', days })
     }
     if (path === '/notes' && req.method() === 'GET') {
       const completion = url.searchParams.get('completion')

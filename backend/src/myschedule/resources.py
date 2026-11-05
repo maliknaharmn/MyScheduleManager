@@ -12,7 +12,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import Field, model_validator
-from sqlalchemy import delete, func, select
+from sqlalchemy import DateTime, Integer, case, cast, delete, func, select
 
 from myschedule.auth import Identity, assert_csrf, current_identity
 from myschedule.domain.availability import Occurrence, Source, calculate_day, expand
@@ -93,6 +93,10 @@ class WeekView(StrictModel):
     week_end: date
     timezone: str
     days: list[DayView]
+
+
+class MonthView(WeekView):
+    month_start: date
 
 
 class ReminderInput(StrictModel):
@@ -375,14 +379,47 @@ async def tags(request: Request, identity: Login):
 
 
 @router.get("/schedules", tags=["schedules"], response_model=EnvelopeResponse[ScheduleList])
-async def list_schedules(request: Request, identity: Login, limit: int = Query(50, ge=1, le=100)):
+async def list_schedules(
+    request: Request,
+    identity: Login,
+    limit: int = Query(50, ge=1, le=100),
+    upcoming: bool = False,
+):
+    query = select(Schedule).where(
+        Schedule.user_id == identity.user_id, Schedule.deleted_at.is_(None)
+    )
+    if upcoming:
+        # Filter BEFORE the limit, so recent history cannot crowd out future agendas.
+        # Each recurring series stays active until its last actual selected weekday
+        # finishes, including an overnight tail. This never writes/deletes history.
+        weekday = func.unnest(Schedule.weekdays).column_valued("selected_weekday")
+        last_offset = (
+            select(
+                func.min(
+                    (cast(func.extract("isodow", Schedule.range_end), Integer) - weekday + 7) % 7,
+                    type_=Integer,
+                )
+            )
+            .correlate(Schedule)
+            .scalar_subquery()
+        )
+        last_day = Schedule.range_end - func.coalesce(last_offset, 0)
+        active_until = case(
+            (Schedule.time_mode == "timed_interval", Schedule.ends_at),
+            (
+                Schedule.time_mode == "daily_pattern",
+                func.timezone(
+                    Schedule.timezone,
+                    last_day + Schedule.end_day_offset + Schedule.end_local_time,
+                ),
+            ),
+            else_=func.timezone(Schedule.timezone, cast(last_day + 1, DateTime)),
+        )
+        query = query.where(active_until > datetime.now(UTC))
     async with request.app.state.database.session(identity.user_id) as session:
         rows = (
             await session.scalars(
-                select(Schedule)
-                .where(Schedule.user_id == identity.user_id, Schedule.deleted_at.is_(None))
-                .order_by(Schedule.created_at.desc(), Schedule.id.desc())
-                .limit(limit + 1)
+                query.order_by(Schedule.created_at.desc(), Schedule.id.desc()).limit(limit + 1)
             )
         ).all()
         return envelope(
@@ -532,6 +569,26 @@ async def week_overview(
         raise ApiError(422, "INVALID_WEEK", "Pilih tanggal Senin sebagai awal minggu.")
     # One database scan/authentication round trip can warm a 35-day browser window.
     week_end = week_start + timedelta(days=weeks * 7 - 1)
+    return envelope(request, await overview_window(request, identity, week_start, week_end))
+
+
+@router.get("/overview/month", tags=["overview"], response_model=EnvelopeResponse[MonthView])
+async def month_overview(request: Request, identity: Login, month_start: date):
+    if month_start.day != 1:
+        raise ApiError(422, "INVALID_MONTH", "Pilih tanggal pertama sebagai awal bulan.")
+    grid_start = month_start - timedelta(days=month_start.weekday())
+    try:
+        grid_end = grid_start + timedelta(days=41)
+        # The availability engine also needs the following midnight.
+        grid_end + timedelta(days=1)
+    except OverflowError as exc:
+        raise ApiError(422, "INVALID_MONTH", "Bulan berada di luar rentang kalender.") from exc
+    data = await overview_window(request, identity, grid_start, grid_end)
+    return envelope(request, {**data, "month_start": month_start})
+
+
+async def overview_window(request: Request, identity: Identity, week_start: date, week_end: date):
+    """One owner-scoped scan for a week or six-row month, using the same capacity rules."""
     async with request.app.state.database.session(identity.user_id) as session:
         profile = await session.get(Profile, identity.user_id)
         if profile is None:
@@ -623,15 +680,12 @@ async def week_overview(
                     }
                 )
             days.append({**asdict(capacity), "occurrences": viewed})
-        return envelope(
-            request,
-            {
-                "week_start": week_start,
-                "week_end": week_end,
-                "timezone": profile.timezone,
-                "days": days,
-            },
-        )
+        return {
+            "week_start": week_start,
+            "week_end": week_end,
+            "timezone": profile.timezone,
+            "days": days,
+        }
 
 
 @router.get("/notes", tags=["notes"], response_model=EnvelopeResponse[NoteList])
