@@ -62,4 +62,10 @@
   .access-card .access-hint, .access-rules, .access-card .access-legal, .access-availability { font-size: 13px; }
   .access-footer nav { gap: 0 16px; }
 }
+@media (max-width: 760px) {
+  /* The host iframe's hit area can exceed its visible badge. Keep the footer
+     scrollable above it; do not hide or disable the provider's own badge. */
+  body:has(#nl-badge-frame) .access-page { padding-bottom: calc(200px + env(safe-area-inset-bottom)); }
+  html:has(.access-page):has(#nl-badge-frame) { scroll-padding-bottom: 200px; }
+}
 @media (max-width: 360px) { .access-brand > span { max-width: 150px; line-height: 1.3; } }

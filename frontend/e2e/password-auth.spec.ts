@@ -139,3 +139,30 @@ test('native readiness does not open general signup, even when submission is for
   await page.locator('.access-form').evaluate(form => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })))
   expect(state.writes).toHaveLength(0)
 })
+
+test('mobile account footer stays clickable above an injected host badge hit area', async ({ page }) => {
+  await nativeService(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/login')
+  await expect(page.getByRole('button', { name: 'Masuk', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Tutup pemberitahuan cookie' }).click()
+  await page.evaluate(() => {
+    const badge = document.createElement('iframe')
+    badge.id = 'nl-badge-frame'
+    badge.title = 'Host badge test fixture'
+    badge.style.cssText = 'position:fixed;right:0;bottom:0;width:202px;height:160px;z-index:999;border:0'
+    document.body.append(badge)
+  })
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 })
+    const settings = page.locator('.access-footer').getByRole('button', { name: 'Pengaturan cookie', exact: true })
+    await settings.scrollIntoViewIfNeeded()
+    const box = (await settings.boundingBox())!
+    const badge = (await page.locator('#nl-badge-frame').boundingBox())!
+    expect(box.y + box.height).toBeLessThanOrEqual(badge.y)
+    await settings.click()
+    await expect(page.getByRole('dialog', { name: 'Pengaturan cookie', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#nl-badge-frame')).toBeVisible()
+  }
+})
