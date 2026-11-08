@@ -47,7 +47,7 @@ function Preferences({ me }: { me: Me }) {
           ? ' Isianmu tetap ada; muat ulang dan tinjau perubahan perangkat lain.' : ''}</p>}
     </form>
     <div className="divider" /><h3>Keamanan akun</h3>
-    <p>Login email dan pengaturan password belum diaktifkan. Login Google tetap menggunakan akun yang sama.</p>
+    <p>Kelola akses password dari pengaturan keamanan. Login Google tetap menggunakan akun yang sama.</p>
     <Link className="text-button" to="/settings/security">Ganti password</Link>
     <div className="divider" /><h3>Google Calendar</h3>
     <p>Pengingat Google Calendar belum tersedia. Agenda dan catatan tetap tersimpan di MySchedule.</p>

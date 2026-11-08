@@ -19,6 +19,7 @@ dependencies = [
     "httpx2>=2.15,<3",
     "google-auth[requests]>=2.40,<3",
     "cryptography>=45,<50",
+    "argon2-cffi>=25.1,<26",
 ]
 
 [project.optional-dependencies]

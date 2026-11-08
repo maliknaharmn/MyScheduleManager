@@ -367,3 +367,62 @@ class CalendarOutbox(Base):
     last_error_code: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PasswordCredential(Timestamps, Base):
+    __tablename__ = "password_credentials"
+    __table_args__ = (
+        UniqueConstraint("username"),
+        UniqueConstraint("email"),
+        CheckConstraint(
+            "username = lower(username) AND username ~ '^[a-z0-9_.]{3,30}$'", name="username_format"
+        ),
+        CheckConstraint("email = lower(email) AND email = btrim(email)", name="email_format"),
+        CheckConstraint(
+            "(password_hash IS NULL AND email_verified_at IS NULL "
+            "AND password_changed_at IS NULL) OR "
+            "(password_hash IS NOT NULL AND email_verified_at IS NOT NULL "
+            "AND password_changed_at IS NOT NULL)",
+            name="credential_state",
+        ),
+        {"schema": "app_private"},
+    )
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    username: Mapped[str] = mapped_column(Text)
+    email: Mapped[str] = mapped_column(Text)
+    password_hash: Mapped[str | None] = mapped_column(Text)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PasswordLink(Base):
+    __tablename__ = "password_links"
+    __table_args__ = (
+        CheckConstraint("purpose IN ('invitation','reset')", name="purpose_values"),
+        CheckConstraint("expires_at > created_at", name="valid_lifetime"),
+        Index("ix_password_links_user_purpose", "user_id", "purpose"),
+        {"schema": "app_private"},
+    )
+
+    id: Mapped[UUID] = mapped_column(PGUUID, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    purpose: Mapped[str] = mapped_column(Text)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class PasswordRateLimit(Base):
+    __tablename__ = "password_rate_limits"
+    __table_args__ = (
+        CheckConstraint("attempts > 0", name="positive_attempts"),
+        Index("ix_password_rate_limits_window", "window_start"),
+        {"schema": "app_private"},
+    )
+
+    bucket_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(BigInteger)

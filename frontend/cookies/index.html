@@ -21,6 +21,7 @@
       <h1>Kebijakan Cookie</h1>
       <p class="legal-intro">Cookie untuk login berbeda dari pilihan menyimpan tema atau salinan agenda di perangkat.</p>
       <p class="legal-date">Berlaku mulai <time datetime="2026-10-29">29 Oktober 2026</time></p>
+      <p class="legal-date">Diperbarui <time datetime="2026-11-08">8 November 2026</time>: keamanan formulir password.</p>
     </div>
     <aside class="document-index">
       <nav aria-label="Isi kebijakan cookie"><h2>Dalam halaman ini</h2><ul>
@@ -38,6 +39,7 @@
         <ul>
           <li><strong>myschedule_session:</strong> pengenal sesi login, bukan kata sandi atau token akses Google. Umur default hingga 7 hari; dapat berakhir lebih cepat setelah keluar atau pencabutan sesi. HttpOnly, Secure di produksi dan SameSite=Lax.</li>
           <li><strong>myschedule_oauth:</strong> mengikat percobaan login ke browser untuk keamanan OAuth. Umur hingga 10 menit dan dibersihkan setelah alur login selesai.</li>
+          <li><strong>myschedule_password_csrf:</strong> pengenal acak untuk mengikat formulir login, aktivasi dan pemulihan password ke browser saat fitur tersedia. Umur hingga 1 jam; HttpOnly, Secure di produksi dan SameSite=Strict. Tidak memuat password atau tautan email dan tidak membuat sesi login.</li>
           <li><strong>myschedule_storage:</strong> mengingat pilihan kategori penyimpanan browser selama 180 hari, atau sampai diubah/dihapus. Memuat versi pilihan, dua nilai izin opsional dan waktu kedaluwarsa, bukan isi agenda atau identitas Google.</li>
         </ul>
         <p>Cookie ini dibutuhkan agar autentikasi, keamanan dan penghormatan terhadap pilihanmu bekerja. Menonaktifkannya melalui browser dapat membuat login gagal atau pilihan perlu diulang. Cookie pilihan tidak digunakan untuk iklan.</p>

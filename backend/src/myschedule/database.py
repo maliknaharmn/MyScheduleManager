@@ -13,6 +13,7 @@ from myschedule.postgres import postgres_engine
 
 class Database:
     def __init__(self, settings: Settings):
+        self.settings = settings
         pool_options = {
             "pool_size": settings.database_pool_size,
             "max_overflow": settings.database_pool_max_overflow,
@@ -75,11 +76,22 @@ class Database:
                     if auth:
                         await session.execute(text("SELECT id FROM users LIMIT 0"))
                         await session.execute(text("SELECT id FROM sessions LIMIT 0"))
+                        if self.settings.password_auth_enabled:
+                            for table in (
+                                "password_credentials",
+                                "password_links",
+                                "password_rate_limits",
+                            ):
+                                await session.execute(
+                                    text(f"SELECT user_id FROM app_private.{table} LIMIT 0")
+                                )
                     else:
                         revision = await session.scalar(
                             text("SELECT version_num FROM alembic_version")
                         )
-                        if revision != "0001":
+                        if revision not in {"0001", "0002"}:
+                            return False
+                        if self.settings.password_auth_enabled and revision != "0002":
                             return False
                         await session.execute(text("SELECT id FROM schedules LIMIT 0"))
                     return True

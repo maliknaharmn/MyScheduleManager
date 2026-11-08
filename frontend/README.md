@@ -85,11 +85,11 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 - Kode workspace/editor dipisahkan dan dimuat setelah sesi terverifikasi. Jika pemuatan modul gagal, pengguna mendapat tindakan muat ulang. Lighthouse lokal bukan pengukuran produksi atau jaminan Core Web Vitals.
 - Prinsip panduan desain yang diberikan pemilik dirangkum secara kontekstual pada `AGENTS.md`, untuk seluruh frontend tanpa mengganti stack, brand, atau alur data yang sudah bekerja.
 
-### Review UI akun publik
+### Akses akun publik
 
-`AUTH-REVIEW.md` mencatat keputusan pemilik dan gerbang backend. `/login`, `/signup`, `/forgot-password`, `/activate-password`, `/reset-password` dan `/settings/security` tersedia untuk review UI; **email/password belum diaktifkan**, tidak ada API baru, pengiriman email atau akun palsu. Submit native dinonaktifkan dengan keterangan publik yang jelas, termasuk saat Enter/submit dipaksakan. Google memakai alur asli yang tidak diubah.
+`AUTH-REVIEW.md` mencatat keputusan pemilik dan gerbang rilis. `/login`, `/signup`, `/forgot-password`, `/activate-password`, `/reset-password` dan `/settings/security` memakai kesiapan native terpisah dari Google. Submit password hanya aktif setelah konfirmasi backend; pendaftaran password umum tetap tertutup, termasuk jika submit dipaksakan. Google memakai alur asli yang tidak diubah.
 
-Form daftar memuat username/email/password/konfirmasi. Show/hide terpisah untuk tiap password, aturan minimal 8 karakter/kapital/angka, dan konfirmasi memberi feedback lokal, bukan klaim password aman atau email sudah terverifikasi. Ganti password memerlukan sesi terverifikasi sebelum field dibuka. Navigasi membuang isian; tidak ada password di query cache, storage, URL atau log aplikasi. Frontend tidak boleh menegakkan keamanan sendirian: wiring backend, hashing, screening password, undangan, rate limits dan validasi server menunggu review.
+Form daftar memuat username/email/password/konfirmasi. Show/hide terpisah untuk tiap password; aturan minimal 8 karakter/kapital/angka dan konfirmasi memberi feedback lokal, bukan klaim kekuatan password. Backend memvalidasi sendiri. Ganti password memerlukan sesi dan status kredensial terverifikasi; jangan meminta password Google untuk akun tanpa kredensial native. Token email dibaca dari fragment dan dihapus dari history entry, disimpan hanya di memori formulir, lalu digunakan melalui POST eksplisit. Navigasi membuang isian; password/token tidak masuk query/mutation cache, storage atau log. Mutasi memakai request langsung tanpa retry otomatis; login menunggu `/me` sebelum membuka workspace. Perubahan password membersihkan cache akun dan meminta login ulang. Respons email bersyarat hanya tampil setelah respons server, bukan keberhasilan pengiriman/inbox palsu.
 
 ## Hari ini dan tindakan tanggal
 

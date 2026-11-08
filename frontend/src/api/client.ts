@@ -40,6 +40,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 export type ServerStatus = components['schemas']['StatusData']
 export type Me = components['schemas']['MeData']
+export type PasswordContext = components['schemas']['PasswordContext']
+export type PasswordSecurity = components['schemas']['PasswordSecurity']
 
 export async function fetchMe(signal?: AbortSignal): Promise<Me | null> {
   try {

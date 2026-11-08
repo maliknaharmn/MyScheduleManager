@@ -21,6 +21,7 @@
       <h1>Kebijakan Privasi</h1>
       <p class="legal-intro">Cara kami menangani identitas Google, agenda, catatan, dan penyimpanan di perangkatmu.</p>
       <p class="legal-date">Berlaku mulai <time datetime="2026-10-29">29 Oktober 2026</time></p>
+      <p class="legal-date">Diperbarui <time datetime="2026-11-08">8 November 2026</time>: akses password dan email keamanan.</p>
     </div>
     <aside class="document-index">
       <nav aria-label="Isi kebijakan"><h2>Dalam halaman ini</h2><ul>
@@ -38,6 +39,7 @@
         <h2>Data yang diproses</h2>
         <ul>
           <li><strong>Identitas Google:</strong> pengenal akun Google, alamat email, status verifikasi email saat login, dan nama profil jika tersedia. Pengenal akun, email dan nama disimpan untuk membuat akun serta menghubungkan data dengan pemiliknya. Kami tidak meminta atau menyimpan kata sandi Google.</li>
+          <li><strong>Akses password terbatas:</strong> untuk akun yang disetujui, username, email terverifikasi, hash password Argon2id, waktu perubahan password, serta hash tautan aktivasi/reset dan masa berlakunya disimpan di server. Password asli tidak disimpan. Tautan aktivasi/reset tidak disimpan dalam penyimpanan browser aplikasi dan baru digunakan setelah formulir dikirim.</li>
           <li><strong>Data yang kamu isi:</strong> judul, waktu, zona waktu, kategori, status dan label agenda; isi dan target catatan; checklist, status penyelesaian, preferensi pengingat serta waktu pembuatan dan perubahan.</li>
           <li><strong>Data akun dan keamanan:</strong> preferensi zona waktu dan jam pengingat, informasi sesi, serta pengenal permintaan untuk membantu keamanan dan pemecahan masalah.</li>
           <li><strong>Data perangkat:</strong> cookie keamanan dan pilihan penyimpanan. Jika diizinkan, cookie tema dan salinan cache agenda di browser. Penyedia hosting dapat memproses metadata jaringan, seperti alamat IP dan informasi browser, untuk mengirim respons dan menjaga layanan.</li>
@@ -47,6 +49,7 @@
       <section id="penggunaan">
         <h2>Tujuan dan akses data</h2>
         <p>Data dipakai untuk memverifikasi login, membuat akun, menampilkan dan mengubah agenda/catatan milikmu, menghitung kapasitas waktu, menjaga sesi, serta mengoperasikan dan mengamankan layanan. Data antarakun dipisahkan; pendaftaran terbuka tidak membuat agenda atau catatan menjadi publik.</p>
+        <p>Pendaftaran password umum belum dibuka; login Google tetap tersedia sesuai kebijakan yang ada. Aktivasi password membuktikan akses email melalui undangan yang diikat ke ID akun lama, bukan menggabungkan akun dari alamat email yang diketik. Aktivasi, reset, atau perubahan password mengakhiri semua sesi aplikasi akun itu dan memerlukan login ulang.</p>
         <p>Data Google tidak dijual, diserahkan kepada broker data, dipakai untuk iklan personal, penilaian kredit, pengawasan, atau pelatihan model AI. Aplikasi tidak memasang analytics atau cookie periklanan. Pengelola dapat memerlukan akses terbatas untuk bantuan yang kamu minta, keamanan, penanganan penyalahgunaan atau kewajiban hukum; bukan untuk membaca agenda sebagai kegiatan rutin.</p>
         <p>Pengingat Google Calendar dan ekspor .ics belum tersedia. Preferensi pengingat yang tersimpan tidak berarti notifikasi akan dikirim. Jika fitur baru membutuhkan data atau izin Google tambahan, kami menjelaskannya sebelum digunakan dan meminta persetujuan baru bila diperlukan.</p>
         <p>Penggunaan dan penerusan informasi yang diterima dari Google mengikuti <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, termasuk persyaratan Limited Use yang berlaku. Kebijakan ini tidak menyatakan bahwa Google telah memverifikasi atau mendukung aplikasi.</p>
@@ -54,6 +57,7 @@
       <section id="penyedia">
         <h2>Penyedia dan keamanan</h2>
         <p>Google menangani autentikasi. Netlify mengirim antarmuka web dan meneruskan permintaan API ke FastAPI Cloud. Database PostgreSQL di Neon menyimpan data aplikasi. Data yang diperlukan untuk menjalankan layanan diproses melalui penyedia tersebut sesuai fungsi masing-masing. Pemrosesan dapat berlangsung di luar negara tempatmu tinggal; kami tidak menjanjikan bahwa seluruh data berada di Indonesia.</p>
+        <p>Untuk akses password yang sudah diaktifkan, Brevo mengirim email aktivasi dan pemulihan. Brevo memproses alamat penerima, isi email keamanan termasuk tautan sekali pakai, dan metadata pengiriman; agenda, catatan, dan password tidak dikirim melalui email. Aplikasi memakai pengenal turunan satu arah untuk membatasi percobaan login dan pengiriman email; bukan menyimpan password dalam log. Ini bukan integrasi pemasaran.</p>
         <p>Pengamanan mencakup HTTPS di produksi, cookie sesi HttpOnly/Secure, pemeriksaan sesi dan CSRF, pembatasan kepemilikan data, dan peran database terbatas. Tidak ada sistem yang bisa menjamin keamanan mutlak. Jangan menyimpan kata sandi, secret, data pembayaran, atau informasi sangat sensitif yang tidak diperlukan untuk menyusun jadwal.</p>
         <p>Informasi dapat diungkapkan jika diwajibkan hukum atau diperlukan secara sah untuk menangani insiden keamanan. Jika terjadi perubahan pengelola atau penggunaan data, kami memberikan pemberitahuan dan meminta persetujuan tambahan sesuai kewajiban yang berlaku.</p>
       </section>

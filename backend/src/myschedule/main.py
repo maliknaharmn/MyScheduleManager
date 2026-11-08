@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import secrets
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -28,6 +30,10 @@ from myschedule.config import Settings, get_settings
 from myschedule.database import Database
 from myschedule.errors import ApiError, api_error_handler, envelope, validation_error_handler
 from myschedule.models import AppSession, Profile
+from myschedule.password_auth import PasswordService
+from myschedule.password_body_limit import PasswordBodyLimit
+from myschedule.password_mail import PasswordMailer
+from myschedule.password_routes import router as password_router
 from myschedule.resources import router as resource_router
 from myschedule.schemas import (
     EnvelopeResponse,
@@ -45,6 +51,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        if settings.smtp_probe_on_startup:
+            passed, code = await asyncio.to_thread(app.state.password_auth.mailer.probe)
+            logging.getLogger("uvicorn.error").info(
+                "smtp_startup_probe passed=%s smtp_code=%s mail_sent=False", passed, code
+            )
         yield
         await app.state.database.close()
 
@@ -63,7 +74,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.database = Database(settings)
     app.state.handshakes = HandshakeStore()
     app.state.google = GoogleClient(settings)
+    app.state.password_auth = PasswordService(
+        settings, app.state.database, PasswordMailer(settings)
+    )
     app.include_router(resource_router)
+    app.include_router(password_router)
+    app.add_middleware(PasswordBodyLimit)
 
     app.add_exception_handler(ApiError, api_error_handler)
     app.add_exception_handler(RequestValidationError, validation_error_handler)

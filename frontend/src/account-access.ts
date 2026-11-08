@@ -12,14 +12,19 @@ export function accountMode(path: string): AccountMode | undefined {
   return accountRoutes[path.replace(/\/$/, '') as keyof typeof accountRoutes]
 }
 
-// Presentation validation only. The approved backend must enforce the same policy
-// plus password screening, rate limits and ownership checks before enabling writes.
+// Presentation feedback only. The backend independently enforces this policy,
+// common-password screening, persistent limits and immutable account ownership.
 export function passwordRules(value: string) {
   return [
-    { key: 'length', label: 'Minimal 8 karakter', met: value.length >= 8 },
+    { key: 'length', label: 'Minimal 8 karakter', met: [...value].length >= 8 },
     { key: 'capital', label: 'Setidaknya satu huruf kapital (A-Z)', met: /[A-Z]/.test(value) },
     { key: 'number', label: 'Setidaknya satu angka (0-9)', met: /[0-9]/.test(value) },
   ]
 }
 
 export function validUsername(value: string) { return /^[a-zA-Z0-9_.]{3,30}$/.test(value) }
+
+export function passwordLink(hash: string): string {
+  const token = new URLSearchParams(hash.replace(/^#/, '')).get('token') ?? ''
+  return /^[A-Za-z0-9_-]{43}$/.test(token) ? token : ''
+}

@@ -20,6 +20,10 @@ anyio==4.15.1
     #   httpx2
     #   starlette
     #   watchfiles
+argon2-cffi==25.1.0
+    # via myschedule-backend (pyproject.toml)
+argon2-cffi-bindings==26.1.0
+    # via argon2-cffi
 asyncpg==0.32.0
     # via myschedule-backend (pyproject.toml)
 authlib==1.9.1
@@ -33,7 +37,9 @@ certifi==2026.10.19
     #   requests
     #   sentry-sdk
 cffi==2.1.1
-    # via cryptography
+    # via
+    #   argon2-cffi-bindings
+    #   cryptography
 charset-normalizer==3.5.2
     # via requests
 click==8.5.0

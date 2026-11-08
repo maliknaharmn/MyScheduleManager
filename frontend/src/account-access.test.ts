@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { accountMode, passwordRules, validUsername } from './account-access'
+import { accountMode, passwordLink, passwordRules, validUsername } from './account-access'
 
 test('account routes are explicit and do not consume unrelated private routes', () => {
   expect(accountMode('/login')).toBe('login')
@@ -27,4 +27,9 @@ test.each([
 test('username presentation validation accepts only the documented 3-30 characters', () => {
   for (const username of ['new.owner', 'new_owner2', 'MixedCase']) expect(validUsername(username)).toBe(true)
   for (const username of ['', 'ab', 'has space', 'email@example.invalid', 'x'.repeat(31)]) expect(validUsername(username)).toBe(false)
+})
+
+test('link tokens are accepted only from the exact fragment format and never coerced', () => {
+  expect(passwordLink(`#token=${'x'.repeat(43)}`)).toBe('x'.repeat(43))
+  for (const hash of ['', '#arbitrary', '#token=short', `#token=${'x'.repeat(44)}`, `#token=${'/'.repeat(43)}`]) expect(passwordLink(hash)).toBe('')
 })

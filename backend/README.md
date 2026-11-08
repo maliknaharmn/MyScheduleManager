@@ -75,6 +75,52 @@ Daftar agenda memuat tag/pengingat secara batch (3 query data untuk sampai 100 a
 
 `GET /api/v1/overview/month?month_start=YYYY-MM-01` mengembalikan enam minggu Senin-Minggu (42 hari) yang mencakup bulan dan tanggal tetangganya. `month_start` harus tanggal 1; `week_start/week_end` adalah batas grid, bukan batas bulan. Menggunakan engine kapasitas dan satu scan rentang yang sama dengan overview mingguan: profil, agenda owner-scoped dan tag Important secara batch, tanpa query per tanggal. Riwayat tidak difilter sebagai upcoming; batas akun/RLS dan `no-store` tetap berlaku. Tidak mengubah schema, data, scope OAuth atau integrasi Google Calendar.
 
+## Akses password terbatas
+
+Google/OIDC dan tabel `users` tetap menjadi identitas akun yang sama. Native auth
+default **nonaktif** (`PASSWORD_AUTH_ENABLED=false`) dan tidak membuat `User` baru.
+Pemilik harus dipasang melalui `PASSWORD_OWNER_USER_ID` yang sudah ada, email akun
+Google yang sesuai, dan username `malik`. Alamat email yang diketik tidak cukup
+untuk menautkan akun. Pendaftaran password umum tetap ditolak.
+
+- `GET /api/v1/auth/password/context`: kesiapan terpisah dari Google dan token CSRF
+  formulir anonim, diikat cookie HttpOnly/Secure/SameSite=Strict selama 1 jam.
+- `POST /api/v1/auth/password/login`: username atau email + password; sesi opaque
+  yang sama seperti login Google. Origin dan CSRF wajib, termasuk login anonim.
+- `POST .../invitation`, `POST .../forgot`: permintaan email dengan respons bersyarat
+  yang tidak mengungkap keberadaan akun atau mengklaim email sudah masuk inbox.
+- `POST .../activate`, `POST .../reset`: token dari fragment email dikirim dalam JSON
+  setelah konfirmasi eksplisit. Undangan 24 jam, reset 30 menit, sekali pakai. GET
+  tidak memakai token. SMTP gagal mempertahankan tautan lama yang masih valid.
+- `GET .../security`, `POST .../change`: identitas terverifikasi, password saat ini
+  dan CSRF sesi wajib untuk perubahan. Aktivasi/reset/perubahan mencabut seluruh
+  sesi aplikasi akun, termasuk Google-created sessions dan browser pengubah; tidak
+  membuat sesi otomatis atau mencabut login Google pada layanan Google.
+- Argon2id melalui `argon2-cffi` (19 MiB, dua iterasi, satu lane, dua operasi paralel
+  per proses). Kebijakan server: 8-128 karakter, kapital dan angka, simbol opsional;
+  penolakan offline untuk daftar password umum dan turunan identitas. Ini bukan
+  pemeriksaan menyeluruh terhadap basis data password bocor.
+- Batas persisten: 5 percobaan/15 menit untuk pengenal akun (alias username/email
+  berbagi kuota), cooldown email 60 detik dan 3 email/akun/jam. Batas global/peer
+  tambahan hanya berlaku untuk native auth, bukan Google. Pengenal bucket berupa
+  HMAC, bukan IP/email asli; bucket lama dibersihkan setelah 2 hari pada request
+  berikutnya. Body native dibatasi 8 KiB sebelum parsing.
+
+Brevo hanya melalui STARTTLS terverifikasi port 587/2525. SMTP login/key/sender
+dipasang sebagai secret backend, bukan variabel frontend. Probe operator
+`SMTP_PROBE_ON_STARTUP=true` memeriksa TLS/auth dari container sebenarnya tanpa
+mengirim email; log hanya hasil dan kode SMTP, bukan pesan provider atau secret.
+Izin IP lokal tidak membuktikan izin IP cloud. Jangan menonaktifkan verifikasi TLS,
+membuka akses IP menyeluruh, atau mengubah paket hosting untuk melewati kegagalan.
+
+Migrasi `0002` hanya menambah tiga tabel auth-private dengan RLS/grant khusus
+`myschedule_auth`. `myschedule_app`/worker tidak dapat membaca hash/token. Backend
+kompatibel menerima `0001`/`0002` ketika native off; native on membutuhkan `0002`.
+**Deploy dan verifikasi kompatibilitas dahulu, baru migrasi** melalui koneksi owner
+direct yang terpisah. Jangan mengirim URL migrasi/test ke lingkungan runtime cloud.
+Rollback kode memakai backend kompatibel dengan native off, bukan menghapus tabel
+kredensial atau mengembalikan schema ke `0001`.
+
 ## Tes dan kontrak
 
 ```sh

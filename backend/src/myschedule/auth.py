@@ -280,7 +280,7 @@ async def current_identity(
     request: Request, token: Annotated[str | None, Security(session_cookie)]
 ) -> Identity:
     if not token or len(token) > 256:
-        raise ApiError(401, "AUTH_REQUIRED", "Login Google untuk mengakses jadwal pribadi.")
+        raise ApiError(401, "AUTH_REQUIRED", "Masuk untuk mengakses jadwal pribadi.")
     database: Database = request.app.state.database
     if database.auth_engine is None:
         raise ApiError(503, "DATABASE_NOT_CONFIGURED", "Database autentikasi belum dikonfigurasi.")
