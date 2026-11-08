@@ -1,9 +1,9 @@
 # Netlify frontend + FastAPI Cloud backend
 
-Production frontend: **https://myschedulemanager.netlify.app**.
+Production frontend domain: **https://myschedule.gwe.web.id**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.
-Latest production deploy ID: `6af0443b0d6273a2498f0ea2` (auth + calendar, 2026-11-08).
+Previous auth/calendar production deploy ID: `6af0443b0d6273a2498f0ea2` (2026-11-08).
 Initial auth UI publication: `6af0407f59c2a22659cb3aa3`; the final deploy adds
 mobile badge-hit-area clearance. Performance deploy: `6aeabc249c30706903302f59`.
 Bottom cookie-consent bar deploy ID: `6ae5c162e89b7a8e8b6117d7` (2026-10-31).
@@ -40,6 +40,40 @@ the gateway public does not remove account ownership or app authentication.
   or add cross-origin cookie workarounds.
 - API responses, errors and auth redirects must retain backend `Cache-Control:
   no-store`. Netlify static headers do not override proxied response headers.
+
+## Custom auth domain cutover (2026-11-09)
+
+- The owner changed the production domain to `myschedule.gwe.web.id` and reports
+  updating Google Auth Platform. The existing Netlify site already lists this as
+  its custom/SSL domain. Anonymous HTTPS checks return 200 for the homepage, public
+  policies and proxied readiness; no DNS, hosting-provider or database change is needed.
+- The initial live Google start still sent the previous Netlify callback. Changing
+  Google Console alone does not change FastAPI Cloud runtime settings. After the
+  owner reauthorized the expired CLI session and approved merge/deployment, only
+  `APP_ORIGIN` and `GOOGLE_REDIRECT_URI` were saved with the values below. All other
+  environment entries, secret flags, Google/session/database/SMTP/owner configuration
+  and Hobby/Nano min 0/max 1 were preserved and compared before/after.
+- The environment save deliberately did not redeploy: the approved `main` push
+  triggers the backend release. Frontend canonicals and public documentation use
+  the new domain; Netlify still requires a separate committed-source publication.
+  Confirm actual deployments and live callback behavior rather than assuming that
+  saving settings, changing Google Console or pushing code deploys both services.
+- Prepared-source checks pass: production build, 52 frontend unit tests, 154
+  desktop/mobile E2E, 4 legal/static checks and 24 backend auth/callback tests.
+  These tests do not prove completed Google login or provider-side approval.
+- Keep the callback path `/api/v1/auth/google/callback`; `/callback` is not an
+  application OAuth endpoint. Privacy/terms/cookies are public pages, not callbacks.
+- After runtime redeployment, verify the new `redirect_uri`, a host-only Secure
+  handshake cookie, rejection of unbound callbacks and a bound cancellation that
+  returns to the new domain. Complete real Google consent only as the owner.
+- Cookies, theme/cache consent and local storage are domain-specific. Sign in and
+  choose storage preferences again on the new domain; existing server-side account
+  data remains attached to the same verified Google identity. Do not broaden cookie
+  domains, merge users by email, rotate session secrets or migrate data for this change.
+- Password invitation/reset links use `APP_ORIGIN`, so new emails will use the new
+  domain after cutover. Do not automatically resend an invitation, consume a token
+  or set the owner's password. Decide on an old-domain redirect only after cutover;
+  do not send old-origin sessions, POST bodies or OAuth cookies across domains.
 
 ## Owner password + calendar release (2026-11-08)
 
@@ -103,8 +137,9 @@ on the compatible backend; do not delete credential tables or reset the database
    ```
 
    The next production-branch push replaces a manual deploy if Git CD is enabled.
-4. Use the resulting stable `https://<site>.netlify.app` domain for auth. Preview
-   and deploy-permalink domains are not separate authorized login environments.
+4. Use the stable production custom domain for auth, currently
+   `https://myschedule.gwe.web.id`. Preview and deploy-permalink domains are not
+   separate authorized login environments.
    Do not rely on login from previews when the backend is configured for production.
 
 ## Performance on the existing Hobby hosting
@@ -178,8 +213,8 @@ Set these **on FastAPI Cloud**, not in Netlify or browser-prefixed variables:
 
 ```dotenv
 APP_ENV=production
-APP_ORIGIN=https://myschedulemanager.netlify.app
-GOOGLE_REDIRECT_URI=https://myschedulemanager.netlify.app/api/v1/auth/google/callback
+APP_ORIGIN=https://myschedule.gwe.web.id
+GOOGLE_REDIRECT_URI=https://myschedule.gwe.web.id/api/v1/auth/google/callback
 COOKIE_SECURE=true
 ```
 
@@ -250,27 +285,33 @@ deployed configuration before changing schema or provisioning a new database.
 ## Google Auth Platform
 
 - OAuth client type: Web application.
-- Authorized JavaScript origin: `https://myschedulemanager.netlify.app`.
-- Authorized redirect URI: `https://myschedulemanager.netlify.app/api/v1/auth/google/callback`.
+- Authorized JavaScript origin: `https://myschedule.gwe.web.id`.
+- Authorized redirect URI: `https://myschedule.gwe.web.id/api/v1/auth/google/callback`.
 - Audience: External; publishing status: In production. Complete any branding,
   authorized-domain or verification requirements Google requests.
 - Only `openid email profile` scopes are used for login. Calendar is not enabled.
-- Branding homepage: `https://myschedulemanager.netlify.app/`.
-- Branding privacy policy: `https://myschedulemanager.netlify.app/privacy/`.
-- Branding terms of service: `https://myschedulemanager.netlify.app/terms/`.
-- Public cookie policy: `https://myschedulemanager.netlify.app/cookies/`.
+- Branding homepage: `https://myschedule.gwe.web.id/`.
+- Branding privacy policy: `https://myschedule.gwe.web.id/privacy/`.
+- Branding terms of service: `https://myschedule.gwe.web.id/terms/`.
+- Public cookie policy: `https://myschedule.gwe.web.id/cookies/`.
+- Authorized domains are configured separately from origins/URL paths: follow
+  Google's registrable-domain and ownership requirements for the new hostname.
 - Netlify deploy does not update Google Console or FastAPI Cloud settings for you.
 
 ### Homepage ownership verification
 
 Google Auth Platform may report that the homepage is not registered to the project
-owner. Verify the exact `https://myschedulemanager.netlify.app/` URL-prefix property
+owner. Verify the exact `https://myschedule.gwe.web.id/` URL-prefix property
 in Google Search Console using a Google account that is an Owner or Editor of the
 OAuth project. The owner-supplied `google-site-verification` meta tag is stored
 directly in `frontend/index.html` so it is present in the production HTML response
 without JavaScript, login or API access. It is a public verification token, not an
 OAuth client secret; do not move it into a client-side effect or remove it after
 verification, because Google can check it again.
+
+The 2026-10-29/31 verification notes below concern the previous Netlify domain.
+They do not prove ownership or Google Branding approval of the new custom domain.
+Keep the existing public tag until the owner supplies any required replacement.
 
 After deployment, confirm the exact tag in the live homepage source, click
 **Verify** in Search Console, and wait **24 hours after successful verification**

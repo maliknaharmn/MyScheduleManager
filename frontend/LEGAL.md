@@ -8,10 +8,10 @@ Never request Google passwords, OTPs or tokens by email.
 
 ## Release URLs
 
-- Homepage: https://myschedulemanager.netlify.app/
-- Privacy: https://myschedulemanager.netlify.app/privacy/
-- Terms: https://myschedulemanager.netlify.app/terms/
-- Cookies: https://myschedulemanager.netlify.app/cookies/
+- Homepage: https://myschedule.gwe.web.id/
+- Privacy: https://myschedule.gwe.web.id/privacy/
+- Terms: https://myschedule.gwe.web.id/terms/
+- Cookies: https://myschedule.gwe.web.id/cookies/
 
 Use the homepage/privacy/terms URLs in Google Auth Platform Branding. Deployment
 does not edit Google Console, verify domain ownership, or guarantee Google approval.

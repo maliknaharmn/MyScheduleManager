@@ -22,7 +22,8 @@ test('built homepage identifies the app, purpose and Google data use in ordinary
   try {
     const document = dom.window.document
     assert.equal(document.title, 'MySchedule Manager')
-    assert.equal(document.querySelector('link[rel="canonical"]').href, 'https://myschedulemanager.netlify.app/')
+    assert.equal(document.querySelector('link[rel="canonical"]').href, 'https://myschedule.gwe.web.id/')
+    assert.doesNotMatch(html, /https:\/\/myschedulemanager\.netlify\.app/)
     assert.equal(document.querySelectorAll('h1').length, 1)
     const root = document.getElementById('root')
     const title = root.querySelector('h1')
@@ -59,7 +60,8 @@ test('release documents are built as public HTML with contact details and workin
       assert.match(html, /datetime="2026-10-29"/)
       assert.match(html, /Pengelola: MySchedule Manager/)
       assert.match(html, /mailto:maliknahar\.mn@gmail\.com/)
-      assert.match(html, new RegExp(`rel="canonical" href="https://myschedulemanager.netlify.app${path}"`))
+      assert.ok(html.includes(`rel="canonical" href="https://myschedule.gwe.web.id${path}"`))
+      assert.doesNotMatch(html, /https:\/\/myschedulemanager\.netlify\.app/)
       assert.doesNotMatch(html, /Draf|belum ditetapkan|perlu ditetapkan|sebelum publikasi|noindex|<div id="root"/i)
       assert.match(html, /<article[\s>]/)
       assert.match(html, /data-cookie-settings/)

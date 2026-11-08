@@ -2,7 +2,7 @@
 
 Kelola agenda, lihat kapasitas harian, dan pantau persiapan melalui catatan serta checklist. MySchedule Manager adalah alat bantu perencanaan pribadi, bukan pengganti seluruh fitur Google Calendar.
 
-[Buka aplikasi](https://myschedulemanager.netlify.app/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](DEPLOYMENT.md) · [Privasi](https://myschedulemanager.netlify.app/privacy/)
+[Buka aplikasi](https://myschedule.gwe.web.id/) · [Instalasi lokal](#menjalankan-secara-lokal) · [Panduan deployment](DEPLOYMENT.md) · [Privasi](https://myschedule.gwe.web.id/privacy/)
 
 > **Status pemeriksaan 4 November 2026: pratinjau publik.** Optimasi latensi commit `c6955ca` dari branch `perf/reduce-loading-latency` sudah live pada frontend dan backend; readiness produksi **200** dengan database `ready`. Kunjungan ulang halaman login terukur 846 ms, tetapi validasi sesi berbasis database masih sekitar 2,1 detik. Waktu simpan dengan sesi nyata belum diukur; target produksi <1 detik, seluruh alur Google dan persetujuan branding belum terverifikasi. Rincian: [hasil rilis performa](DEPLOYMENT.md#live-performance-test-release-2026-11-04).
 
@@ -57,9 +57,9 @@ Jika tombol masuk belum tersedia, jangan menganggap contoh pada halaman Welcome 
 
 Dokumen publik dapat dibaca tanpa login atau JavaScript:
 
-- [Kebijakan Privasi](https://myschedulemanager.netlify.app/privacy/)
-- [Ketentuan Layanan](https://myschedulemanager.netlify.app/terms/)
-- [Kebijakan Cookie](https://myschedulemanager.netlify.app/cookies/)
+- [Kebijakan Privasi](https://myschedule.gwe.web.id/privacy/)
+- [Ketentuan Layanan](https://myschedule.gwe.web.id/terms/)
+- [Kebijakan Cookie](https://myschedule.gwe.web.id/cookies/)
 
 ## Batas rilis awal
 
