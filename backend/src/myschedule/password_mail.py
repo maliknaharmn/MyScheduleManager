@@ -51,8 +51,8 @@ class PasswordMailer:
         message["From"] = formataddr((settings.smtp_from_name, settings.smtp_from_email))
         message["To"] = recipient
         message["Subject"] = title
-        # Disabling Brevo click tracking also keeps the fragment out of tracking
-        # redirects. GET only opens the form; final use requires an explicit POST.
+        # Request no relay tracking; use plaintext rather than HTML tracking assets.
+        # GET only opens the form; final use requires an explicit POST.
         message["X-Mailin-Track-Clicks"] = "0"
         message["X-Mailin-Track-Opens"] = "0"
         link = f"{settings.app_origin.rstrip('/')}/{path}#token={token}"

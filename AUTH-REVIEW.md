@@ -2,10 +2,12 @@
 
 Status: **UI approved by Malik; backend implementation and eventual auth + calendar
 release authorized after security tests and safe migration readiness.** The native
-backend and frontend wiring are implemented and tested locally. Native auth defaults
-off until the compatibility rollout, production migration and cloud SMTP checks pass.
-No production password invitation or activation has occurred at this preflight stage.
-Google authentication, existing sessions and calendar ownership remain unchanged.
+backend/frontend are now released, with production schema `0002` and owner-only
+native auth enabled. Google authentication remains available. One real invitation
+was accepted by Brevo and committed server-side; the owner must still confirm inbox
+receipt and choose the replacement password himself. No agent activation, password
+seed or automatic email-link login occurred. Application default stays native-off
+for unconfigured deployments.
 
 ## Confirmed decisions
 
@@ -89,7 +91,8 @@ clear the account cache and require login again. Browser autocomplete is support
   S256 PKCE. These checks do not prove a completed Google login or private writes.
 - Read-only production lookup found exactly one matching Google owner account,
   not disabled. Its immutable ID and private account data were not printed or changed.
-- Production runtime configuration has no migration-owner connection. Existing
+- At preflight, the supplied limited-role connection file had no migration-owner
+  connection. Existing
   validation URLs target a different database and must not be reused for production.
   The owner subsequently chose existing Neon CLI access: its authenticated project
   has one exact matching production write endpoint. The direct connection for the
@@ -106,12 +109,14 @@ clear the account cache and require login again. Browser autocomplete is support
   unit tests had two lazy-load wait timeouts under parallel backend/test load;
   rerunning the unchanged suite with two workers passed. No test assertion or
   timeout was weakened. These are existing-feature tests, not proof of native auth.
-- Production revision is still `0001`; neither runtime role can create public
+- Before rollout, production revision was `0001`; neither runtime role can create public
   tables and the auth role does not own `users`. An empty migration-secret template
   was prepared at the owner's root `.local/auth-production-migration.env`, then
   populated through the verified CLI without exposing its value.
-- Owner confirmed the connectivity email arrived in the inbox. SMTP from FastAPI
-  Cloud's actual outbound IP still needs separate verification before activation.
+- Owner confirmed the connectivity email arrived in the inbox. Subsequently,
+  certificate-verified STARTTLS and SMTP authentication passed from the actual
+  Cloud containers, not only this machine. The temporary startup probe was then
+  disabled so future cold starts do not depend on an SMTP diagnostic.
 - Owner additionally approved a temporary ordinary Neon branch and commit/push of
   the tested auth + calendar changes followed by merge to `main`. No unrelated dirty
   files in the original worktree are included.
@@ -120,20 +125,37 @@ clear the account cache and require login again. Browser autocomplete is support
   user/session counts. No mail or password activation was performed there. The
   approved ephemeral branch was deleted; production runtime URLs were untouched.
 - Final preflight passed: **176 backend tests**, Ruff/check-format, production build,
-  **52 frontend unit tests, 152 desktop/mobile E2E and 4 static/legal checks**. SMTP
+  **52 frontend unit tests, 154 desktop/mobile E2E and 4 static/legal checks**. SMTP
   environment-string port parsing has a regression test. The final production-build
   visual checks retain the approved brand/forms in both themes without overflow.
 
-## Production release gates still open
+## Production rollout verified (2026-11-08)
 
-- Perform a compatibility-first rollout: the old readiness probe accepts only schema
-  revision `0001`. Deploy and verify support for both old/new schemas with native
-  auth disabled before migrating; do not make the old live release fail readiness.
-- Verify Brevo sender/domain, SMTP credentials and TLS egress from FastAPI Cloud.
-  Do not disable TLS verification or change hosting tiers to bypass failures.
-- Activate only the owner password account initially. Separate native registration
-  availability from Google login readiness; do not expose invite secrets in UI.
-- Publish the updated privacy, cookie and terms disclosures with frontend wiring.
-- Send the real invitation only after production checks. The owner alone opens it
-  and chooses a replacement password; real hosted login still needs owner confirmation.
-- Never deploy the separate local development password-login launcher to cloud.
+- Implementation commit `38ea8e9`; live badge-hit-area fix `08e3165`. Both were
+  pushed to the feature branch and fast-forwarded into `main` with owner approval.
+- Compatibility backend was deployed with native auth off before applying `0002`.
+  Production migration passed with no model drift or changes in user/session counts.
+  Owner migration credentials were not uploaded as part of this auth rollout.
+- Native auth was enabled only after Cloud SMTP verification. Google identity-only
+  PKCE start, anonymous `401`, missing-CSRF `403`, closed signup and no-store pass on
+  direct and proxied API origins. Hobby/Nano, min 0/max 1 remain unchanged.
+- Final frontend was built from an isolated committed-source export, not the dirty
+  original working tree. No dependency symlinks, private configs or local-preview
+  launcher were committed or uploaded. Known private credentials were absent from
+  publish output. Policies disclose native credentials, Brevo and required CSRF cookies.
+- Actual mobile testing found the Netlify badge iframe intercepted footer clicks.
+  Responsive page/scroll clearance fixed this without hiding/disabling the badge.
+  Regression tests and live desktop/tablet/phone checks in both themes pass.
+- Exactly one real activation invitation was requested through the deployed API.
+  Its pending credential and valid 24-hour invitation confirm SMTP acceptance and
+  database commit, not owner inbox receipt. No token/link/password was printed.
+
+## Owner checks still required
+
+- Open the email titled **Aktifkan password MySchedule Manager** and choose a fresh
+  password privately. Never reuse the password exposed in conversation.
+- Confirm activation, username/email login, unchanged existing agenda/notes and
+  real Google login. Provider-mocked tests and OAuth-start checks do not prove a
+  completed hosted Google login or a real native login before the owner acts.
+- Activation/reset/change intentionally revoke all old application sessions.
+  Sending or merely opening the invitation does not activate the credential.

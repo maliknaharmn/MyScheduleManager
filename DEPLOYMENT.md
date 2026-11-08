@@ -3,7 +3,9 @@
 Production frontend: **https://myschedulemanager.netlify.app**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.
-Latest production deploy ID: `6aeabc249c30706903302f59` (performance test, 2026-11-04).
+Latest production deploy ID: `6af0443b0d6273a2498f0ea2` (auth + calendar, 2026-11-08).
+Initial auth UI publication: `6af0407f59c2a22659cb3aa3`; the final deploy adds
+mobile badge-hit-area clearance. Performance deploy: `6aeabc249c30706903302f59`.
 Bottom cookie-consent bar deploy ID: `6ae5c162e89b7a8e8b6117d7` (2026-10-31).
 Static homepage/branding deploy ID: `6ae5bb8d2407182b6dd86f30` (2026-10-31).
 Homepage ownership-tag deploy ID: `6ae335f6462dd1c3e6bcdc06` (2026-10-29).
@@ -25,8 +27,11 @@ the gateway public does not remove account ownership or app authentication.
   `npm run build`, and publish directory `dist`. `frontend/package-lock.json`
   controls dependency installation. Repository-root `netlify.toml` is authoritative.
 - FastAPI remains at `https://myschedulemanager.fastapicloud.dev`.
-- Current backend deployment: `30a83a87-178a-42b7-be3a-65c514ff153f`
-  (2026-11-04; manual source upload from commit `c6955ca`, 100% traffic).
+- Auth application-code verification deployment: `65a22ccb-ad4d-445f-b048-c967ad3f3507`
+  (2026-11-08; commit `08e3165`, success). Subsequent `main` pushes, including
+  documentation changes, can issue new deployment IDs without changing app code.
+- Password auth is enabled only for the existing bound owner account; general
+  password signup stays closed. Schema revision is `0002`.
 - Browser requests stay on the Netlify origin: `/api/*` and `/health/*` proxy to
   the same paths on FastAPI Cloud. React Router's SPA fallback comes last.
 - OAuth and session cookies are host-only (no explicit Domain), HttpOnly, Secure
@@ -35,6 +40,52 @@ the gateway public does not remove account ownership or app authentication.
   or add cross-origin cookie workarounds.
 - API responses, errors and auth redirects must retain backend `Cache-Control:
   no-store`. Netlify static headers do not override proxied response headers.
+
+## Owner password + calendar release (2026-11-08)
+
+- Owner approved UI, native-auth implementation, temporary Neon migration testing,
+  and feature-branch commit/push followed by merge to `main`. Application commits:
+  `38ea8e9` (owner auth/recovery) and `08e3165` (mobile hosting-badge clearance),
+  including calendar/upcoming-only Agenda commit `88fbc41` and approved account UI.
+- Rolled out compatibility first: backend `755c555b-e45a-441e-87e7-dfce1453719d`
+  accepted schema `0001`/`0002` with native auth off. Only then applied production
+  migration `0002`. No model drift or changes in user/session counts were observed.
+  The isolated production-clone migration/grant test passed and its temporary Neon
+  branch was deleted. No production users or agendas were seeded.
+- Enabled owner-only native auth after certificate-verified STARTTLS/SMTP auth from
+  actual Cloud containers. Enablement deployment was `834847bf-86cd-4f29-a800-d7a9573690b0`;
+  the one-off startup probe was then disabled to avoid adding SMTP work to cold starts.
+  `PASSWORD_AUTH_ENABLED=true`, `SMTP_PROBE_ON_STARTUP=false`; registration stays
+  closed. Existing Google/session configuration and Hobby/Nano min 0/max 1 remain.
+- New SMTP/owner configuration is encrypted backend-cloud secrets, not Netlify
+  variables or browser code. The migration-owner URL stays in a private local file;
+  it was not uploaded as part of this rollout. No old chat password was reused.
+- Built frontend from an isolated `git archive` export. Netlify CLI initially chose
+  the older dirty working tree; no deleted files were restored and none of its local
+  preview code was deployed. Build output was checked against configured secrets.
+- Live mobile inspection caught the badge iframe intercepting cookie settings.
+  Responsive bottom/scroll clearance fixes real pointer access without hiding the
+  provider badge. Final publication: `6af0443b0d6273a2498f0ea2`. Public policy pages
+  now describe native credentials, Brevo delivery and the necessary CSRF cookie.
+- Checks pass: 176 backend tests on isolated local PostgreSQL, Ruff/check-format,
+  schema drift checks locally/on Neon, production build, 52 frontend unit tests,
+  154 desktop/mobile E2E and 4 legal/static checks. GitHub CI passed for `08e3165`.
+  Live 1440/768/390 checks in light/dark confirm native readiness, closed signup,
+  anonymous security gating, working cookie pointer controls and no browser errors.
+- Direct/proxied readiness is 200; anonymous `/me` is 401/no-store; missing native
+  CSRF and public password signup are rejected with 403. Google start still uses
+  identity-only scopes, nonce/state and S256 PKCE. These are not completed Google
+  login, authenticated-save latency or real native-login measurements.
+- Exactly one real owner invitation was requested through the deployed Cloud API.
+  SMTP acceptance and the committed pending 24-hour invitation were verified.
+  No token/link was printed, no password set, and no session created by the agent.
+  Inbox receipt, activation and real login require the owner. The invitation alone
+  does not revoke sessions; saving the new password intentionally revokes all old
+  application sessions, including Google-created sessions.
+
+Future backend releases must keep schema `0002` compatibility. Do not redeploy the
+pre-auth backend, which accepts only `0001`. To disable native auth, change its flag
+on the compatible backend; do not delete credential tables or reset the database.
 
 ## First deployment
 
