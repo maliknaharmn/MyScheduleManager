@@ -75,7 +75,7 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 
 ## Halaman masuk publik
 
-- Halaman Welcome berfokus pada manfaat produk dan satu tindakan **Masuk dengan Google**. Status migrasi/database, label build, callback localhost dan panduan `.env` tidak ditampilkan kepada pengunjung; panduan operasional tetap di README backend.
+- Halaman Welcome berfokus pada manfaat produk, tautan **Masuk** / **Buat akun**, dan satu tindakan Google. Status migrasi/database, label build, callback localhost dan panduan `.env` tidak ditampilkan kepada pengunjung; panduan operasional tetap di README backend.
 - Judul utama dan brand mobile menampilkan **MySchedule Manager**. Penjelasan fungsi, penggunaan identitas Google, pengelola/kontak dan kebijakan tersedia dalam HTML awal, bukan hanya `<noscript>` atau setelah pemeriksaan sesi. Tidak ada klaim bahwa pengingat Calendar sudah tersedia.
 - Setelah `vite build`, `scripts/prerender-homepage.mjs` merender komponen `Welcome` yang sama melalui `src/prerender.tsx` ke `dist/index.html`. Proses ini anonim, tanpa API, cookie, sesi atau data akun. Jangan melewati script tersebut saat deploy. Konten statis tidak menampilkan kontrol cookie/tema yang belum aktif dan tidak mengklaim layanan masuk siap.
 - Client memakai `createRoot`, bukan hydration: konten publik statis diganti dengan state sesi, tema dan consent browser. Tidak ada salinan teks homepage kedua yang harus disinkronkan. Informasi publik tetap tampil saat `/me` tertunda/gagal; workspace dan cache privat tetap memerlukan identitas yang terverifikasi.
@@ -84,6 +84,12 @@ Create/update HTTP tidak di-retry otomatis. Draft profil dan expected_version ti
 - Preview adalah tangkapan UI aplikasi dengan data sintetis yang diberi label. Tersedia AVIF responsif 720/1200px dengan PNG fallback, mengikuti tema. Sumber aset tercatat di `assets-source/preview-README.md`.
 - Kode workspace/editor dipisahkan dan dimuat setelah sesi terverifikasi. Jika pemuatan modul gagal, pengguna mendapat tindakan muat ulang. Lighthouse lokal bukan pengukuran produksi atau jaminan Core Web Vitals.
 - Prinsip panduan desain yang diberikan pemilik dirangkum secara kontekstual pada `AGENTS.md`, untuk seluruh frontend tanpa mengganti stack, brand, atau alur data yang sudah bekerja.
+
+### Review UI akun publik
+
+`AUTH-REVIEW.md` mencatat keputusan pemilik dan gerbang backend. `/login`, `/signup`, `/forgot-password`, `/activate-password`, `/reset-password` dan `/settings/security` tersedia untuk review UI; **email/password belum diaktifkan**, tidak ada API baru, pengiriman email atau akun palsu. Submit native dinonaktifkan dengan keterangan publik yang jelas, termasuk saat Enter/submit dipaksakan. Google memakai alur asli yang tidak diubah.
+
+Form daftar memuat username/email/password/konfirmasi. Show/hide terpisah untuk tiap password, aturan minimal 8 karakter/kapital/angka, dan konfirmasi memberi feedback lokal, bukan klaim password aman atau email sudah terverifikasi. Ganti password memerlukan sesi terverifikasi sebelum field dibuka. Navigasi membuang isian; tidak ada password di query cache, storage, URL atau log aplikasi. Frontend tidak boleh menegakkan keamanan sendirian: wiring backend, hashing, screening password, undangan, rate limits dan validasi server menunggu review.
 
 ## Hari ini dan tindakan tanggal
 

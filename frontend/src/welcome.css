@@ -6,6 +6,11 @@
 .welcome-hero-copy h1 { font-size: clamp(38px, 4vw, 54px); line-height: 1.08; letter-spacing: -.045em; font-weight: 700; }
 .welcome-hero-copy > p { max-width: 36ch; font-size: 18px; line-height: 1.6; margin-top: 24px; color: var(--muted); }
 .welcome-sign-in { margin-top: 28px; }
+.welcome-account-actions { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; max-width: 340px; }
+.welcome-account-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 22px; border-radius: 10px; background: #0752cb; color: #fff; font-size: 14px; font-weight: 650; text-decoration: none; }
+.welcome-account-actions a + a { background: var(--surface); color: var(--welcome-accent); border: 1px solid var(--border); }
+.welcome-sign-in > .welcome-email-status { max-width: 39ch; font-size: 12px; line-height: 1.65; color: var(--muted); }
+:root[data-theme=dark] .welcome-account-actions a + a { color: #99c2ff; }
 .welcome-google { display: inline-flex; justify-content: center; align-items: center; gap: 12px; min-height: 48px; width: 280px; max-width: 100%; padding: 12px 20px; border: 1px solid #747775; border-radius: 10px; background: #fff; color: #1f1f1f; font-size: 15px; font-weight: 550; text-decoration: none; white-space: nowrap; transition: transform .15s ease, opacity .15s ease; }
 .welcome-google img { flex: none; object-fit: contain; }
 .welcome-google:hover { border-color: var(--welcome-accent); }

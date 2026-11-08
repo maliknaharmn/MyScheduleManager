@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom'
 import type { ServerStatus } from './api/client'
 import { ThemeSwitch, useTheme } from './theme'
 import { CookieNotice, CookieSettingsButton } from './CookiePrivacy'
+import { Link } from 'react-router-dom'
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><img src="/icons/brand-80.png?v=my-paper-1" width={40} height={40} alt="" /></span><span>MySchedule<span className="brand-suffix"> Manager</span></span></div>
@@ -26,9 +27,11 @@ export function Welcome({ status, error, pending, retry, staticPage = false }: {
           <h1 id="welcome-title">MySchedule<br /> Manager</h1>
           <p>Aplikasi agenda dan catatan pribadi untuk mengatur jadwal, melihat kapasitas harian, dan menuntaskan persiapan dengan checklist.</p>
           <div className="welcome-sign-in">
+            <nav className="welcome-account-actions" aria-label="Akses akun"><Link to="/login">Masuk</Link><Link to="/signup">Buat akun</Link></nav>
             {canLogin ? <a className="welcome-google" href="/api/v1/auth/google/start?return_to=/" aria-describedby="welcome-access-note"><img src="/icons/google-g.png" alt="" width={20} height={20} />Masuk dengan Google</a>
               : <button className="welcome-google" disabled aria-describedby={staticPage ? undefined : 'welcome-login-state'}><img src="/icons/google-g.png" alt="" width={20} height={20} />{staticPage ? 'Masuk dengan Google' : pending ? 'Memeriksa akses…' : 'Masuk belum tersedia'}</button>}
             {staticPage && <noscript><p className="welcome-service-message">Aktifkan JavaScript untuk masuk dan mengelola agenda. Informasi aplikasi dan kebijakan tetap dapat dibaca tanpa JavaScript.</p></noscript>}
+            <p className="welcome-email-status">Pendaftaran email belum dibuka. Login Google tetap tersedia saat layanan siap.</p>
             {!staticPage && pending && <span id="welcome-login-state" className="sr-only" role="status">Memeriksa layanan masuk.</span>}
             {!pending && (error || unavailable) && <div id="welcome-login-state" className="welcome-service-message" role="alert"><p>{error ? 'Koneksi belum berhasil. Periksa internet, lalu coba lagi.' : 'Layanan masuk sedang tidak tersedia. Silakan coba lagi sebentar.'}</p><button className="text-button" onClick={retry}>Coba lagi</button></div>}
             {!error && !unavailable && loginError && <p className="welcome-service-message" role="alert">Proses masuk belum selesai. Silakan coba kembali dengan akun Google-mu.</p>}

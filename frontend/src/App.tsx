@@ -5,8 +5,11 @@ import { ThemeProvider } from './theme'
 import { forgetCalendar } from './week-cache'
 import { Welcome, SessionLoading } from './Welcome'
 import { CookiePrivacy } from './CookiePrivacy'
+import { useLocation } from 'react-router-dom'
+import { accountMode } from './account-access'
 
 const Workspace = lazy(() => import('./Workspace'))
+const AccountAccess = lazy(() => import('./AccountAccess'))
 
 class WorkspaceBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -22,6 +25,7 @@ export function App() {
 }
 
 function AppContent() {
+  const location = useLocation()
   const queryClient = useQueryClient()
   // Revalidate identity on focus; only resource data gets a short freshness window.
   const me = useQuery({ queryKey: ['me'], queryFn: ({ signal }) => fetchMe(signal), staleTime: 0 })
@@ -30,6 +34,8 @@ function AppContent() {
   useEffect(() => {
     if (me.isSuccess && !me.data) void forgetCalendar(queryClient)
   }, [me.isSuccess, me.data, queryClient])
+  const mode = accountMode(location.pathname)
+  if (mode) return <Suspense fallback={<SessionLoading />}><AccountAccess key={`${location.key}:${me.data?.user.id ?? 'public'}`} mode={mode} me={me.data} status={status.data} pending={me.isPending || (!me.error && status.isPending)} sessionPending={me.isPending} error={me.error ?? status.error} retry={() => { void me.refetch(); void status.refetch() }} /></Suspense>
   if (me.data) return <WorkspaceBoundary><Suspense fallback={<SessionLoading />}><Workspace me={me.data} /></Suspense></WorkspaceBoundary>
   // Public information never depends on the API. Private routes still require me.data.
   return <Welcome status={status.data} error={me.error ?? status.error} pending={me.isPending || (!me.error && status.isPending)} retry={() => { void me.refetch(); void status.refetch() }} />

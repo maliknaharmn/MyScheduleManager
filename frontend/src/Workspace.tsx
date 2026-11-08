@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { api, ApiError, type Me } from './api/client'
 import { Button } from './components/ui/button'
@@ -46,6 +46,9 @@ function Preferences({ me }: { me: Me }) {
         {mutation.error instanceof ApiError && mutation.error.code === 'VERSION_CONFLICT'
           ? ' Isianmu tetap ada; muat ulang dan tinjau perubahan perangkat lain.' : ''}</p>}
     </form>
+    <div className="divider" /><h3>Keamanan akun</h3>
+    <p>Login email dan pengaturan password belum diaktifkan. Login Google tetap menggunakan akun yang sama.</p>
+    <Link className="text-button" to="/settings/security">Ganti password</Link>
     <div className="divider" /><h3>Google Calendar</h3>
     <p>Pengingat Google Calendar belum tersedia. Agenda dan catatan tetap tersimpan di MySchedule.</p>
     <div className="divider" /><h3>Privasi di perangkat</h3><p>Kelola cookie tema dan penyimpanan agenda di browser. Pilihan ini tidak menghapus data akun.</p><CookieSettingsButton />
