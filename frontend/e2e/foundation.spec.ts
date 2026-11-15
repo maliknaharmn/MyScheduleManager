@@ -4,7 +4,7 @@ test('public Welcome hides development diagnostics and has no mobile overflow', 
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'MySchedule Manager', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Hari yang\s*lebih ringan\./ })).toBeVisible()
   // Unlike UI fixtures, the real /status can spend up to 10s probing a cold local DB.
   await expect(page.getByRole('button', { name: 'Masuk belum tersedia' })).toBeDisabled({ timeout: 15_000 })
   await expect(page.getByText(/Siapa pun bisa masuk dengan akun Google/)).toBeVisible()

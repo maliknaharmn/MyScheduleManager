@@ -1,8 +1,9 @@
 import { useSearchParams } from 'react-router-dom'
 import type { ServerStatus } from './api/client'
-import { ThemeSwitch, useTheme } from './theme'
+import { ThemeSwitch } from './theme'
 import { CookieNotice, CookieSettingsButton } from './CookiePrivacy'
 import { Link } from 'react-router-dom'
+import { WelcomeCalendarPreview, WelcomeWeekPreview } from './WelcomePreview'
 
 function Brand() {
   return <div className="brand"><span className="brand-mark"><img src="/icons/brand-80.png?v=my-paper-1" width={40} height={40} alt="" /></span><span>MySchedule<span className="brand-suffix"> Manager</span></span></div>
@@ -14,18 +15,17 @@ export function SessionLoading() {
 
 export function Welcome({ status, error, pending, retry, staticPage = false }: { status?: ServerStatus; error: Error | null; pending: boolean; retry: () => void; staticPage?: boolean }) {
   const [params] = useSearchParams()
-  const { theme } = useTheme()
   const available = status?.google_login_configured && status.database === 'ready'
   const canLogin = available && !error && !pending
   const unavailable = !pending && !!status && !available
   const loginError = params.has('error')
   return <><div className="welcome-public">
-    <header className="welcome-public-header"><Brand />{!staticPage && <ThemeSwitch compact />}</header>
+    <header className="welcome-public-header"><Brand />{!staticPage && <ThemeSwitch welcomeVisual />}</header>
     <main>
       <section className="welcome-hero" aria-labelledby="welcome-title">
         <div className="welcome-hero-copy">
-          <h1 id="welcome-title">MySchedule<br /> Manager</h1>
-          <p>Aplikasi agenda dan catatan pribadi untuk mengatur jadwal, melihat kapasitas harian, dan menuntaskan persiapan dengan checklist.</p>
+          <h1 id="welcome-title">Hari yang{' '}<br /><span>lebih ringan.</span></h1>
+          <p>Aplikasi agenda dan catatan pribadi untuk mengatur jadwal, melihat ruang harian, dan menuntaskan persiapanmu di satu tempat.</p>
           <div className="welcome-sign-in">
             <nav className="welcome-account-actions" aria-label="Akses akun"><Link to="/login">Masuk</Link><Link to="/signup">Buat akun</Link></nav>
             {canLogin ? <a className="welcome-google" href="/api/v1/auth/google/start?return_to=/" aria-describedby="welcome-access-note"><img src="/icons/google-g.png" alt="" width={20} height={20} />Masuk dengan Google</a>
@@ -38,8 +38,9 @@ export function Welcome({ status, error, pending, retry, staticPage = false }: {
             <p className="welcome-legal-note">Dengan menggunakan layanan, kamu menyetujui <a href="/terms/">Ketentuan Layanan</a>. Baca cara data ditangani dalam <a href="/privacy/">Kebijakan Privasi</a>.</p>
           </div>
         </div>
-        <figure className="welcome-preview"><picture><source type="image/avif" srcSet={`/previews/home-${theme}-720.avif 720w, /previews/home-${theme}-1200.avif 1200w`} sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1060px) calc(100vw - 64px), 636px" /><img src={`/previews/home-${theme}.png`} width={1200} height={820} alt="Contoh MySchedule Manager: kapasitas harian, catatan penting, dan agenda satu minggu." fetchPriority="high" /></picture><figcaption>Contoh tampilan dengan data ilustrasi.</figcaption></figure>
+        <WelcomeCalendarPreview staticPage={staticPage} />
       </section>
+      <WelcomeWeekPreview staticPage={staticPage} />
       <section className="welcome-product-details" aria-label="Tentang MySchedule Manager">
         <div><h2>Kenali kapasitas harimu</h2><p>Lihat waktu yang sudah terisi sebelum menerima komitmen baru. Agenda yang bertumpuk dihitung sekali.</p></div>
         <div><h2>Persiapan sampai tuntas</h2><p>Simpan target dan rincian dalam catatan. Kelola checklist, selesaikan, atau buka kembali saat perlu.</p></div>

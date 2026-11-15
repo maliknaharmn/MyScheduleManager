@@ -1,0 +1,69 @@
+.app-theme-switch.welcome-theme-switch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  min-width: 96px;
+  min-height: 48px;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+}
+
+.app-theme-switch.welcome-theme-switch:hover { background: transparent; }
+
+.app-theme-switch.welcome-theme-switch > .welcome-theme-rail {
+  position: relative;
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  place-items: center;
+  width: 88px;
+  height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #edf2f8;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+
+.welcome-theme-thumb {
+  position: absolute;
+  z-index: 0;
+  top: 2px;
+  left: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f48a36;
+  transition: transform .2s ease, background-color .2s ease;
+}
+
+.welcome-theme-sun,
+.welcome-theme-moon { position: relative; z-index: 1; transition: color .18s ease; }
+.welcome-theme-sun { color: #fff; }
+.welcome-theme-moon { color: #64748b; }
+.app-theme-switch.welcome-theme-switch:hover > .welcome-theme-rail { border-color: #8197b7; }
+.app-theme-switch.welcome-theme-switch:active > .welcome-theme-rail { transform: scale(.98); }
+
+:root[data-theme=dark] .app-theme-switch.welcome-theme-switch > .welcome-theme-rail {
+  border-color: #596679;
+  background: #263347;
+}
+:root[data-theme=dark] .welcome-theme-thumb {
+  transform: translateX(44px);
+  background: #434b59;
+}
+:root[data-theme=dark] .welcome-theme-sun { color: #a7b7cb; }
+:root[data-theme=dark] .welcome-theme-moon { color: #fff; }
+:root[data-theme=dark] .app-theme-switch.welcome-theme-switch:hover > .welcome-theme-rail { border-color: #97aac4; }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-theme-switch.welcome-theme-switch > .welcome-theme-rail,
+  .welcome-theme-thumb,
+  .welcome-theme-sun,
+  .welcome-theme-moon { transition: none; }
+  .app-theme-switch.welcome-theme-switch:active > .welcome-theme-rail { transform: none; }
+}

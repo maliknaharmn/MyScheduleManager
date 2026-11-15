@@ -41,6 +41,32 @@ the gateway public does not remove account ownership or app authentication.
 - API responses, errors and auth redirects must retain backend `Cache-Control:
   no-store`. Netlify static headers do not override proxied response headers.
 
+## Interactive Welcome release (2026-11-15)
+
+- Integrated the owner's newer Welcome source from the original working tree onto
+  the current production base, preserving `/login`, `/signup`, native recovery,
+  Google OAuth, the custom-domain canonicals and all existing account boundaries.
+  The original local-preview backend, missing-file changes and unrelated edits
+  are not part of this release.
+- Public calendar/checklist and weekly previews use a fixed, clearly labelled
+  November 2026 illustration. Clicking dates, keyboard tab navigation and checking
+  sample tasks only update component memory: no private API writes, stored preview
+  data, production accounts or real user agendas are involved. With JavaScript
+  unavailable, the public explanation remains readable and demo controls are disabled.
+- `welcome.spec.ts` now verifies the new illustrations, keyboard behavior, task
+  reset on reload, ready/unavailable/retry states, no-script/blocked-bundle reading,
+  and visible Masuk/Buat akun controls across widths/themes. Existing account/native
+  auth tests still cover the forms and closed general password registration.
+- Full regression testing found a desktop cookie banner covering Google sign-in;
+  top-aligning the hero and reducing its top padding fixes the overlap without
+  hiding the banner or removing any account action.
+- Production build, 52 frontend unit tests, 162 desktop/mobile E2E and 4 legal/static
+  checks pass. Visual review uses the production build at desktop/tablet/mobile in
+  both themes. These checks do not complete real Google login or test physical Safari.
+- Publish only an isolated export of the approved commit to the existing Netlify
+  site. No runtime URL, OAuth/SMTP secret, schema, database or hosting-plan change
+  is required. A `main` push can still trigger FastAPI Cloud's existing auto-deploy.
+
 ## Custom auth domain cutover (2026-11-09)
 
 - The owner changed the production domain to `myschedule.gwe.web.id` and reports
