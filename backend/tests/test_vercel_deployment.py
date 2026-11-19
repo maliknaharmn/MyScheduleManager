@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from packaging.requirements import Requirement
@@ -36,7 +37,12 @@ def test_vercel_hosts_both_apps_without_proxying_to_previous_hosts():
     package = json.loads((ROOT / "frontend/package.json").read_text())
     lock = json.loads((ROOT / "frontend/package-lock.json").read_text())
     assert package["engines"]["node"] == lock["packages"][""]["engines"]["node"] == "24.x"
-    assert frontend["routes"] == [{"handle": "filesystem"}, {"src": "/.*", "dest": "/index.html"}]
+    assert frontend["routes"] == [
+        {"src": "/", "dest": "/index.html"},
+        {"src": "/(privacy|terms|cookies)/?", "dest": "/$1/index.html"},
+        {"handle": "filesystem"},
+        {"src": "/.*", "dest": "/index.html"},
+    ]
     assert config["rewrites"] == [
         {"source": "/api/:path*", "destination": {"service": "backend"}},
         {"source": "/health/:path*", "destination": {"service": "backend"}},
@@ -156,3 +162,25 @@ async def test_shared_oauth_readiness_requires_0003_and_forced_rls(db_settings):
 def test_default_single_worker_source_configuration_is_still_compatible():
     database = Database(Settings(_env_file=None))
     assert database.settings.oauth_state_storage == "memory"
+
+
+@pytest.mark.parametrize("passed,code", [(True, None), (False, 535)])
+async def test_opt_in_startup_probe_is_observable_without_mail_or_credentials(caplog, passed, code):
+    app = create_app(
+        Settings(
+            _env_file=None,
+            smtp_probe_on_startup=True,
+            smtp_username="synthetic-probe-user",
+            smtp_password="synthetic-probe-password",
+        )
+    )
+    mailer = app.state.password_auth.mailer
+    mailer.probe = Mock(return_value=(passed, code))
+    mailer.send = Mock(side_effect=AssertionError("Startup must never send mail"))
+    async with app.router.lifespan_context(app):
+        pass
+    mailer.probe.assert_called_once_with()
+    mailer.send.assert_not_called()
+    assert f"smtp_startup_probe passed={passed} smtp_code={code} mail_sent=False" in caplog.text
+    assert "synthetic-probe-user" not in caplog.text
+    assert "synthetic-probe-password" not in caplog.text

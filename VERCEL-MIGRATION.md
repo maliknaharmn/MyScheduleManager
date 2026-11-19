@@ -43,14 +43,16 @@
   Free project, expiring **2026-11-21**. Only this branch was upgraded to `0003`.
   All existing table contents matched before/after using private SHA-256 fingerprints.
   Forced RLS and least-privilege runtime role readiness passed; production is untouched.
-- Local checks currently pass **216 backend tests**, Ruff/formatting, frontend
+- Local checks currently pass **218 backend tests**, Ruff/formatting, frontend
   build, 52 frontend unit tests and 4 legal/static checks. An earlier full desktop/mobile
   E2E run passed **162/162**. An additional Node 24 run passed 160 and exposed two
   notes synchronization/conflict test failures; those remain under investigation
   and must not be hidden by automatic retries or a premature merge-ready claim.
   Their traces were preserved; an explicit single-worker reproduction of both
   cases passed 6/6 without application/test changes. This does not erase the
-  original failure or establish a root cause.
+  original failure or establish a root cause. A complete Node 24 desktop/mobile
+  run subsequently passed **162/162 with one worker and no retries**. The two-worker
+  intermittency remains recorded; no notes behavior or test assertion was weakened.
   The three public policies name Vercel in this branch; the unchanged production
   publication still names its current providers until a reviewed cutover. Cloud build/runtime,
   browser results and any further checks must be recorded separately when completed.
@@ -105,9 +107,27 @@
   application production cutover and `main` merge remain separate approvals.
   Retain this empty initialization deployment so the first-deployment rule does not
   reset again. All application deployments still require a verified Preview target.
-- Cloud readiness, actual native-library imports, SMTP TLS/auth, maintenance/API
-  routing and anonymous OAuth/CSRF remain **pending**. There is no validated preview
-  URL to review yet; do not merge or migrate production based on the build alone.
+- App deployment `dpl_J1T2vs3Dbd2Pgp77q3DYFSf3KKrS` from `0342f6e` was explicitly
+  inspected as **Preview**, not Production. Native Python 3.13 in `sin1` loaded
+  successfully; `/health/live` and `/health/ready` returned **200/no-store** against
+  rehearsal schema `0003` and limited roles. Anonymous requests remained protected
+  by Vercel (302); authenticated automation access does not create an app session.
+- The first real routing probe caught 404s for `/` and trailing-slash policy paths,
+  despite the actual HTML files and SPA deep links working. Explicit root/policy
+  index rules now precede the frontend filesystem handler. Reverify in the next
+  cloud build rather than treating a local schema test as sufficient.
+- The startup SMTP diagnostic used a host-specific logger at INFO and was not
+  observable in Vercel's runtime logs. Its opt-in, value-free diagnostic now uses
+  an application logger at WARNING, regression-tested for both success/failure
+  without mail or credential output. The real TLS/auth result is still pending.
+- A private automation bypass was generated with protection still on. Vercel
+  requires one such token to be its managed `VERCEL_AUTOMATION_BYPASS_SECRET`; it
+  cannot be unset while it is the only token. It was not added as an application
+  env entry: the project still has exactly 25 Preview-only app variables and no
+  Production app credentials. The token is never a substitute for app auth and
+  must stay out of Git, browser assets, command arguments and published links.
+- SMTP TLS/auth, corrected static routes and anonymous OAuth/CSRF still need their
+  remaining cloud acceptance checks. Do not merge or migrate production yet.
 - A final read-only check of the unchanged public site returned **200** for Welcome,
   readiness and status; its database was ready and its original in-memory OAuth
   mode remained active. No login, password, mail or application-data writes occurred.

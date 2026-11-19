@@ -53,7 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         if settings.smtp_probe_on_startup:
             passed, code = await asyncio.to_thread(app.state.password_auth.mailer.probe)
-            logging.getLogger("uvicorn.error").info(
+            # Native serverless hosts may suppress INFO before ASGI startup finishes.
+            # This opt-in, value-free diagnostic must remain observable on those hosts.
+            logging.getLogger("myschedule.runtime_probe").warning(
                 "smtp_startup_probe passed=%s smtp_code=%s mail_sent=False", passed, code
             )
         yield
