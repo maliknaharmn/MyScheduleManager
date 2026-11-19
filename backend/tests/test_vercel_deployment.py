@@ -37,15 +37,19 @@ def test_vercel_hosts_both_apps_without_proxying_to_previous_hosts():
     package = json.loads((ROOT / "frontend/package.json").read_text())
     lock = json.loads((ROOT / "frontend/package-lock.json").read_text())
     assert package["engines"]["node"] == lock["packages"][""]["engines"]["node"] == "24.x"
-    assert frontend["routes"] == [
-        {"src": "/", "dest": "/index.html"},
-        {"src": "/(privacy|terms|cookies)/?", "dest": "/$1/index.html"},
-        {"handle": "filesystem"},
-        {"src": "/.*", "dest": "/index.html"},
-    ]
+    assert frontend["routes"] == [{"handle": "filesystem"}, {"src": "/.*", "dest": "/index.html"}]
     assert config["rewrites"] == [
         {"source": "/api/:path*", "destination": {"service": "backend"}},
         {"source": "/health/:path*", "destination": {"service": "backend"}},
+        {"source": "/", "destination": {"service": "frontend", "path": "/index.html"}},
+        {
+            "source": "/:policy(privacy|terms|cookies)/",
+            "destination": {"service": "frontend", "path": "/:policy/index.html"},
+        },
+        {
+            "source": "/:policy(privacy|terms|cookies)",
+            "destination": {"service": "frontend", "path": "/:policy/index.html"},
+        },
         {"source": "/:path*", "destination": {"service": "frontend"}},
     ]
     assert not any(key in config for key in ("crons", "daemons", "builds", "env", "build"))

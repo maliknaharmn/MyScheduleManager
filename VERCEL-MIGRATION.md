@@ -113,21 +113,30 @@
   rehearsal schema `0003` and limited roles. Anonymous requests remained protected
   by Vercel (302); authenticated automation access does not create an app session.
 - The first real routing probe caught 404s for `/` and trailing-slash policy paths,
-  despite the actual HTML files and SPA deep links working. Explicit root/policy
-  index rules now precede the frontend filesystem handler. Reverify in the next
-  cloud build rather than treating a local schema test as sufficient.
+  despite the actual HTML files and SPA deep links working. Per-service explicit
+  index routes did not resolve that cloud behavior. Top-level service destinations
+  now select the actual root/policy index file through their documented `path`
+  field, before the general frontend delegation. Reverify this in the next cloud
+  build rather than treating a local schema test as sufficient.
 - The startup SMTP diagnostic used a host-specific logger at INFO and was not
   observable in Vercel's runtime logs. Its opt-in, value-free diagnostic now uses
   an application logger at WARNING, regression-tested for both success/failure
-  without mail or credential output. The real TLS/auth result is still pending.
+  without mail or credential output. The real Vercel runtime then recorded
+  **`passed=True`, `mail_sent=False`** for Brevo STARTTLS/auth. No API key or email
+  send was needed. SMTP remains the selected transport.
 - A private automation bypass was generated with protection still on. Vercel
   requires one such token to be its managed `VERCEL_AUTOMATION_BYPASS_SECRET`; it
   cannot be unset while it is the only token. It was not added as an application
   env entry: the project still has exactly 25 Preview-only app variables and no
   Production app credentials. The token is never a substitute for app auth and
   must stay out of Git, browser assets, command arguments and published links.
-- SMTP TLS/auth, corrected static routes and anonymous OAuth/CSRF still need their
-  remaining cloud acceptance checks. Do not merge or migrate production yet.
+- Cloud maintenance checks passed for private reads, Google start, an empty mail
+  request and an empty agenda request: all returned **503/no-store**, `Retry-After:
+  60`, and no cookie, session, email or app-data write. After these checks, only the
+  Preview flags were changed to `SMTP_PROBE_ON_STARTUP=false` and
+  `MAINTENANCE_MODE=false`, for the next isolated anonymous validation deployment.
+- Corrected static routes and anonymous OAuth/CSRF still need their remaining
+  cloud acceptance checks. Do not merge or migrate production yet.
 - A final read-only check of the unchanged public site returned **200** for Welcome,
   readiness and status; its database was ready and its original in-memory OAuth
   mode remained active. No login, password, mail or application-data writes occurred.
