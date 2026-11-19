@@ -21,9 +21,12 @@
 - Vercel CLI `59.16.0` was browser-authorized. The existing workspace
   `maliknaharmns-projects` is active **Hobby**, with no trial. Unrelated projects
   were left unchanged.
-- A separate empty `myschedule-manager` project was created:
+- A separate `myschedule-manager` project was created:
   `prj_LocK85MCOpmhycrz1UZpncrdjJTd`. Its default function region is `sin1` and Node
-  version is `24.x`. No production deployment or domain cutover is claimed.
+  version is `24.x`. No domain cutover has occurred. The initial CLI deployment
+  was unexpectedly classified Production and was removed, as detailed below;
+  the owner then explicitly approved a **zero-secret empty bootstrap only** to
+  initialize Vercel. This is not approval for an app Production deploy or cutover.
 - Root `vercel.json` passes Vercel's published JSON Schema. It defines two Services
   under one deployment: native Python/FastAPI in `backend/`, static Vite in
   `frontend/`, with API/health routes evaluated before frontend routes. Vercel
@@ -41,7 +44,13 @@
   All existing table contents matched before/after using private SHA-256 fingerprints.
   Forced RLS and least-privilege runtime role readiness passed; production is untouched.
 - Local checks currently pass **216 backend tests**, Ruff/formatting, frontend
-  build, 52 frontend unit tests, **162 desktop/mobile E2E**, and 4 legal/static checks.
+  build, 52 frontend unit tests and 4 legal/static checks. An earlier full desktop/mobile
+  E2E run passed **162/162**. An additional Node 24 run passed 160 and exposed two
+  notes synchronization/conflict test failures; those remain under investigation
+  and must not be hidden by automatic retries or a premature merge-ready claim.
+  Their traces were preserved; an explicit single-worker reproduction of both
+  cases passed 6/6 without application/test changes. This does not erase the
+  original failure or establish a root cause.
   The three public policies name Vercel in this branch; the unchanged production
   publication still names its current providers until a reviewed cutover. Cloud build/runtime,
   browser results and any further checks must be recorded separately when completed.
@@ -59,6 +68,49 @@
   any deploy. Bare directory negations now allow Vercel's walker to descend into
   both application roots; the revised dry-run contains 121 expected inputs. Verify
   the final committed export again before deploying, including secret exclusions.
+
+## Cloud build evidence and preview blocker - 2026-11-19
+
+- Source commit `66d4b03` was exported from Git and checked against the exact CLI
+  upload: 117 regular files (121 entries including empty directories), no secret
+  files/values, test fixtures, migration-owner URLs or local-preview backend.
+- The cloud build completed successfully on Hobby. Deployment metadata confirmed
+  a native **Python 3.13** function in **`sin1`**, with 2,048 MB memory and a 60-second
+  timeout. This proves build/output placement, **not runtime readiness or login**.
+- Despite explicitly passing `--target preview`, Vercel classified this project's
+  first no-Git deployment as **Production**, and assigned only new `vercel.app`
+  aliases. It was **not** connected to `myschedule.gwe.web.id`. Verification stopped
+  when inspection found the environment mismatch; the unintended deployment and
+  its aliases were removed. No app runtime probe or email was sent.
+- Follow-up metadata confirmed **zero remaining deployments**, **zero custom
+  domains**, all 25 variables still **Preview-only**, and no Production variables.
+  Existing Netlify/FastAPI Cloud services, production Neon schema/data and DNS were
+  unchanged. `main` and `origin/main` remain at `46403dde5bb2fd0a730276a92e4cceef89da66ca`.
+- The build also showed the former open-ended frontend Node engine selecting 26.x
+  despite the project's 24.x default. The frontend manifest and lockfile now pin
+  **24.x**. Local build, 52 unit tests and 4 legal/static checks pass on Node 24.22.3;
+  a subsequent cloud build on that version is still required.
+- Vercel's official [environment documentation](https://vercel.com/docs/deployments/environments#first-deployment)
+  confirms the first deployment is **always Production**, even with `--target=preview`
+  or a non-production Git branch. It uses Production variables, so none of this
+  project's Preview-only credentials were available. Deleting all deployments
+  resets that first-deployment rule; connecting Git does **not** avoid it.
+  **Do not blindly retry** the CLI, create a placeholder Production deployment, or
+  treat `--skip-domain` as proof of Preview. A new deployment method needs owner
+  review and explicit permission for a protected, zero-secret project bootstrap
+  with no custom domain. Even a canceled/failed first deployment counts if retained.
+  The owner subsequently selected **"Izinkan bootstrap kosong"**: an isolated static
+  placeholder was deployed with no app source, secrets, database or custom domain,
+  using `--skip-domain`. This is the sole approved Production-label exception;
+  application production cutover and `main` merge remain separate approvals.
+  Retain this empty initialization deployment so the first-deployment rule does not
+  reset again. All application deployments still require a verified Preview target.
+- Cloud readiness, actual native-library imports, SMTP TLS/auth, maintenance/API
+  routing and anonymous OAuth/CSRF remain **pending**. There is no validated preview
+  URL to review yet; do not merge or migrate production based on the build alone.
+- A final read-only check of the unchanged public site returned **200** for Welcome,
+  readiness and status; its database was ready and its original in-memory OAuth
+  mode remained active. No login, password, mail or application-data writes occurred.
 
 ## Required serverless OAuth change
 
@@ -142,3 +194,14 @@ References: [Vercel Services](https://vercel.com/docs/services),
 [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi),
 [Hobby](https://vercel.com/docs/plans/hobby),
 [SMTP](https://vercel.com/kb/guide/serverless-functions-and-smtp).
+
+## Free-plan budget boundary
+
+Vercel's published Hobby allowances checked on 2026-11-19 include 4 active CPU-hours,
+360 GB-hours provisioned memory, 1 million function invocations and CDN requests,
+100 GB fast data transfer and 10 GB fast origin transfer per month. Services share
+the normal function allowances; no service bindings, daemon, paid storage, analytics
+add-on or Observability Plus is required here. Hobby has no paid overage budget:
+limits can pause features until their reset rather than authorize an upgrade.
+Do not add synthetic keep-alive traffic, buy extra capacity or promise uptime.
+Existing Neon Free and Brevo allowances remain independent limits.

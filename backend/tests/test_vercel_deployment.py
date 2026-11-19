@@ -33,6 +33,9 @@ def test_vercel_hosts_both_apps_without_proxying_to_previous_hosts():
     assert frontend["root"] == "frontend" and frontend["framework"] == "vite"
     assert frontend["installCommand"] == "npm ci"
     assert frontend["buildCommand"] == "npm run build" and frontend["outputDirectory"] == "dist"
+    package = json.loads((ROOT / "frontend/package.json").read_text())
+    lock = json.loads((ROOT / "frontend/package-lock.json").read_text())
+    assert package["engines"]["node"] == lock["packages"][""]["engines"]["node"] == "24.x"
     assert frontend["routes"] == [{"handle": "filesystem"}, {"src": "/.*", "dest": "/index.html"}]
     assert config["rewrites"] == [
         {"source": "/api/:path*", "destination": {"service": "backend"}},
