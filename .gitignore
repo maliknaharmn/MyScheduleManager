@@ -49,6 +49,7 @@ test-results/
 
 # Local deployment linkage and installed agent tooling (never publish credentials).
 .netlify/
+.vercel/
 /.agents/
 /skills-lock.json
 

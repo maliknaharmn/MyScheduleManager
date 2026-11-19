@@ -1,0 +1,63 @@
+# Historical preparation only. Superseded by VERCEL-MIGRATION.md; do not apply.
+# API only: keep the existing Neon database and Netlify frontend.
+# Never omit plan: Render defaults a new web service to a paid compute plan.
+previews:
+  generation: "off"
+
+services:
+  - type: web
+    name: myschedule-api-singapore
+    runtime: docker
+    repo: https://github.com/maliknaharmn/MyScheduleManager
+    branch: infra/render-free-singapore
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: singapore
+    plan: free
+    numInstances: 1
+    autoDeployTrigger: "off"
+    healthCheckPath: /health/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_ORIGIN
+        value: https://myschedule.gwe.web.id
+      - key: GOOGLE_REDIRECT_URI
+        value: https://myschedule.gwe.web.id/api/v1/auth/google/callback
+      - key: COOKIE_SECURE
+        value: "true"
+      # Start gated; only enable traffic after target verification and source drain.
+      - key: MAINTENANCE_MODE
+        value: "true"
+      - key: PASSWORD_AUTH_ENABLED
+        value: "true"
+      - key: MAIL_TRANSPORT
+        value: brevo_api
+      - key: SMTP_PROBE_ON_STARTUP
+        value: "false"
+      - key: DATABASE_POOL_SIZE
+        value: "2"
+      - key: DATABASE_POOL_MAX_OVERFLOW
+        value: "1"
+      # Reuse existing limited Neon roles and identity secrets. Do not generate replacements.
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: PASSWORD_OWNER_USER_ID
+        sync: false
+      - key: PASSWORD_OWNER_EMAIL
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false

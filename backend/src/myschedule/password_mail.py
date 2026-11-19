@@ -1,10 +1,12 @@
-"""Brevo SMTP transport. Never log SMTP protocol, messages, links or credentials."""
+"""Brevo SMTP/HTTPS transports. Never log messages, links, credentials or provider bodies."""
 
 import logging
 import smtplib
 import ssl
 from email.message import EmailMessage
 from email.utils import formataddr
+
+import httpx
 
 from myschedule.config import Settings
 
@@ -63,6 +65,9 @@ class PasswordMailer:
             "Semua sesi aplikasi akun akan berakhir setelah password disimpan.\n\n"
             "Jika Anda tidak meminta email ini, abaikan. Membuka tautan saja tidak mengubah akun.\n"
         )
+        if settings.mail_transport == "brevo_api":
+            self._send_https(recipient, title, message.get_content(), purpose)
+            return
         try:
             with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
                 smtp.ehlo()
@@ -80,3 +85,39 @@ class PasswordMailer:
             # identities, server text, links, tokens, messages or credentials.
             logger.warning("password_mail_failed smtp_code=%s", getattr(error, "smtp_code", None))
             raise PasswordMailUnavailable() from error
+
+    def _send_https(self, recipient: str, title: str, content: str, purpose: str) -> None:
+        # Fixed HTTPS destination, verified certificates, no redirects, retries or SMTP fallback.
+        # A timeout may occur after acceptance; automatically sending again could duplicate mail.
+        status = None
+        try:
+            with httpx.Client(
+                timeout=10, verify=True, follow_redirects=False, trust_env=False
+            ) as client:
+                response = client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={
+                        "api-key": self.settings.brevo_api_key.get_secret_value(),
+                        "accept": "application/json",
+                    },
+                    json={
+                        "sender": {
+                            "name": self.settings.smtp_from_name,
+                            "email": self.settings.smtp_from_email,
+                        },
+                        "to": [{"email": recipient}],
+                        "subject": title,
+                        "textContent": content,
+                        "headers": {"X-Mailin-Track-Clicks": "0", "X-Mailin-Track-Opens": "0"},
+                    },
+                )
+                status = response.status_code
+                if status != 201:
+                    raise ValueError("Brevo did not confirm acceptance")
+                message_id = response.json().get("messageId")
+                if not isinstance(message_id, str) or not message_id.strip():
+                    raise ValueError("Brevo did not confirm acceptance")
+            logger.info("password_mail_accepted purpose=%s transport=brevo_api", purpose)
+        except (httpx.HTTPError, OSError, TimeoutError, ValueError, TypeError, AttributeError):
+            logger.warning("password_mail_failed transport=brevo_api http_status=%s", status)
+            raise PasswordMailUnavailable() from None

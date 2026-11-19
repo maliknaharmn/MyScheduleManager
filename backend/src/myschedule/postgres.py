@@ -22,7 +22,9 @@ def require_same_database(runtime: str, migration: str) -> None:
         raise ValueError("Migration and runtime target different databases; no migration was run")
 
 
-def connection_options(value: str, *, migration: bool = False) -> tuple[URL, dict]:
+def connection_options(
+    value: str, *, migration: bool = False, ssl_ca_pem: str | None = None
+) -> tuple[URL, dict]:
     url = make_url(value)
     if url.drivername not in {"postgres", "postgresql", "postgresql+asyncpg"}:
         raise ValueError("Use a PostgreSQL URL with the asyncpg driver")
@@ -36,6 +38,8 @@ def connection_options(value: str, *, migration: bool = False) -> tuple[URL, dic
     ssl_option = query.pop("ssl", None)
     binding = query.pop("channel_binding", None)
     if neon:
+        if ssl_ca_pem:
+            raise ValueError("Do not replace Neon's public certificate trust with a private CA")
         if sslmode == "disable" or ssl_option in {"disable", "false", "0"}:
             raise ValueError("TLS cannot be disabled for Neon")
         if binding not in {None, "require", "prefer", "disable"}:
@@ -51,7 +55,11 @@ def connection_options(value: str, *, migration: bool = False) -> tuple[URL, dic
             raise ValueError("libpq channel_binding is unsupported by asyncpg")
         if sslmode is not None and ssl_option is not None and sslmode != ssl_option:
             raise ValueError("Conflicting SSL options")
-        if sslmode is not None or ssl_option is not None:
+        if ssl_ca_pem:
+            if sslmode not in {None, "verify-full"} or ssl_option not in {None, "verify-full"}:
+                raise ValueError("A private database CA requires verified TLS and hostname checks")
+            arguments["ssl"] = ssl.create_default_context(cadata=ssl_ca_pem)
+        elif sslmode is not None or ssl_option is not None:
             arguments["ssl"] = sslmode or ssl_option
     return url.set(drivername="postgresql+asyncpg", query=query), arguments
 
@@ -62,8 +70,9 @@ def postgres_engine(
     migration: bool = False,
     pool_size: int = 2,
     max_overflow: int = 1,
+    ssl_ca_pem: str | None = None,
 ) -> AsyncEngine:
-    url, arguments = connection_options(value, migration=migration)
+    url, arguments = connection_options(value, migration=migration, ssl_ca_pem=ssl_ca_pem)
     options: dict = {"pool_pre_ping": True, "connect_args": arguments, "hide_parameters": True}
     if migration:
         options["poolclass"] = NullPool

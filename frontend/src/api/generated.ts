@@ -1153,9 +1153,9 @@ export interface components {
             capabilities: components["schemas"]["Capabilities"];
             /**
              * Auth Handshake Storage
-             * @constant
+             * @enum {string}
              */
-            auth_handshake_storage: "single_process_memory";
+            auth_handshake_storage: "single_process_memory" | "postgres";
         };
         /** TagView */
         TagView: {

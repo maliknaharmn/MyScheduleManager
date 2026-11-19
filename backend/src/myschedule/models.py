@@ -426,3 +426,18 @@ class PasswordRateLimit(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     attempts: Mapped[int] = mapped_column(BigInteger)
+
+
+class OAuthHandshake(Base):
+    __tablename__ = "oauth_handshakes"
+    __table_args__ = (
+        CheckConstraint("expires_at > created_at", name="valid_lifetime"),
+        Index("ix_oauth_handshakes_expires_at", "expires_at"),
+        {"schema": "app_private"},
+    )
+
+    state_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    binding_hash: Mapped[str] = mapped_column(String(64))
+    encrypted_payload: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

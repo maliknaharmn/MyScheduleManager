@@ -1,0 +1,17 @@
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!requirements-dev.lock
+!src/
+!src/**
+!alembic.ini
+!alembic/
+!alembic/**
+.env
+.env.*
+.local/
+.venv/
+**/__pycache__/
+src/myschedule/local_preview.py
+src/myschedule/local-login.html

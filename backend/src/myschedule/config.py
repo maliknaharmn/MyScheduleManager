@@ -16,12 +16,16 @@ class Settings(BaseSettings):
         env_file=(BACKEND_DIRECTORY / ".env", PROJECT_DIRECTORY / ".local/neon-runtime.env"),
         extra="ignore",
         case_sensitive=False,
+        hide_input_in_errors=True,
     )
 
     app_env: Literal["development", "test", "production"] = "development"
     app_origin: str = "http://localhost:5173"
+    maintenance_mode: bool = False
+    oauth_state_storage: Literal["memory", "postgres"] = "memory"
     database_url: SecretStr | None = None
     auth_database_url: SecretStr | None = None
+    database_ssl_ca_pem: SecretStr = SecretStr("")
     database_pool_size: int = Field(default=2, ge=1, le=10)
     database_pool_max_overflow: int = Field(default=1, ge=0, le=10)
     migration_database_url: SecretStr | None = None
@@ -38,6 +42,8 @@ class Settings(BaseSettings):
     password_owner_user_id: UUID | None = None
     password_owner_email: str = ""
     password_owner_username: Literal["malik"] = "malik"
+    mail_transport: Literal["smtp", "brevo_api"] = "smtp"
+    brevo_api_key: SecretStr = SecretStr("")
     smtp_host: Literal["smtp-relay.brevo.com"] = "smtp-relay.brevo.com"
     smtp_port: int = 587
     smtp_security: Literal["starttls"] = "starttls"
@@ -65,6 +71,12 @@ class Settings(BaseSettings):
             raise ValueError("APP_ORIGIN must be an HTTP(S) origin without a path")
         if self.session_ttl_seconds < 60:
             raise ValueError("Session lifetime is too short")
+        if self.oauth_state_storage == "postgres" and (
+            not self.auth_database_url
+            or not self.session_secret
+            or len(self.session_secret.get_secret_value()) < 32
+        ):
+            raise ValueError("Shared OAuth state requires the auth connection and a strong secret")
         if self.password_auth_enabled:
             from email.utils import parseaddr
 
@@ -82,12 +94,19 @@ class Settings(BaseSettings):
                     raise ValueError("Password auth requires valid owner and sender addresses")
             if any(character in self.smtp_from_name for character in "\r\n"):
                 raise ValueError("Invalid sender name")
-        if self.password_auth_enabled or self.smtp_probe_on_startup:
+        if self.smtp_probe_on_startup and self.mail_transport != "smtp":
+            raise ValueError("SMTP startup probe requires the SMTP transport")
+        if (
+            self.password_auth_enabled and self.mail_transport == "smtp"
+        ) or self.smtp_probe_on_startup:
             if (
                 not self.smtp_username.get_secret_value()
                 or not self.smtp_password.get_secret_value()
             ):
                 raise ValueError("SMTP requires backend credentials")
+        if self.password_auth_enabled and self.mail_transport == "brevo_api":
+            if not self.brevo_api_key.get_secret_value().strip():
+                raise ValueError("Brevo HTTPS transport requires a backend API key")
         if self.app_env == "production":
             if not self.cookie_secure or origin.scheme != "https":
                 raise ValueError("Production requires HTTPS and secure cookies")

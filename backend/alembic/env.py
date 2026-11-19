@@ -42,7 +42,11 @@ def run_sync(connection):
 
 
 async def run_async():
-    engine = postgres_engine(migration_url(), migration=True)
+    engine = postgres_engine(
+        migration_url(),
+        migration=True,
+        ssl_ca_pem=Settings().database_ssl_ca_pem.get_secret_value() or None,
+    )
     async with engine.connect() as connection:
         await connection.run_sync(run_sync)
     await engine.dispose()

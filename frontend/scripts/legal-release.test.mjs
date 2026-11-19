@@ -81,6 +81,11 @@ test('release documents are built as public HTML with contact details and workin
     assert.equal((await fetch(origin + '/privacy/..%2f..%2f.env')).status, 404)
     assert.equal((await fetch(origin + '/legal-drafts/privacy/')).status, 404)
     assert.equal((await fetch(origin + '/privacy/', { method: 'POST' })).status, 404)
+    for (const path of ['/privacy/', '/terms/', '/cookies/']) {
+      const html = await (await fetch(origin + path)).text()
+      assert.match(html, /Vercel/)
+      assert.doesNotMatch(html, /Netlify|FastAPI Cloud/)
+    }
     const config = await readFile(new URL('../vite.config.ts', import.meta.url), 'utf8')
     assert.doesNotMatch(config, /legal-drafts/)
   } finally { await new Promise(resolve => server.close(resolve)) }
