@@ -28,6 +28,8 @@ tokens.json
 
 # Python
 .venv/
+# Worktree dependency links are files to Git, not directories.
+/backend/.venv
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -39,6 +41,7 @@ htmlcov/
 
 # Frontend / browser tests
 node_modules/
+/frontend/node_modules
 dist/
 coverage/
 playwright-report/

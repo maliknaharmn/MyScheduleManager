@@ -18,6 +18,19 @@
 
 ## Current state
 
+**Protected preview for owner review:**
+[Open preview](https://myschedule-manager-9k3yoko7e-maliknaharmns-projects.vercel.app/).
+Sign in to Vercel with the project owner's account to view it; do not share an
+automation bypass URL/token. Deployed application source is **`8aaf762`**, deployment
+`dpl_8rADPkaWXy3KgsQKitaYzSjCGtxN`, verified **Preview**. Later documentation-only
+commits do not change those deployed application files.
+
+This is an **anonymous/public-flow review**, not a real owner login/save test.
+The registered Google callback and canonical app origin remain the production
+domain; do not complete Google/native login on the preview or treat it as a final
+production acceptance test. No merge, production app deployment, migration or DNS
+cutover is approved by the empty bootstrap exception.
+
 - Vercel CLI `59.16.0` was browser-authorized. The existing workspace
   `maliknaharmns-projects` is active **Hobby**, with no trial. Unrelated projects
   were left unchanged.
@@ -30,8 +43,8 @@
 - Root `vercel.json` passes Vercel's published JSON Schema. It defines two Services
   under one deployment: native Python/FastAPI in `backend/`, static Vite in
   `frontend/`, with API/health routes evaluated before frontend routes. Vercel
-  Services are **Beta on all plans**, so an actual Hobby build remains a required
-  acceptance check, not something inferred from local configuration validity.
+  Services are **Beta on all plans**. Actual Hobby builds and the preview runtime
+  checks below passed; support was not inferred from local schema validity alone.
 - `.vercelignore` narrowly includes application inputs and excludes private envs,
   local state, virtualenvs, tests, migrations, and the original local-preview backend.
   The old Dockerfile is excluded so Vercel does not choose a container runtime.
@@ -116,8 +129,10 @@
   despite the actual HTML files and SPA deep links working. Per-service explicit
   index routes did not resolve that cloud behavior. Top-level service destinations
   now select the actual root/policy index file through their documented `path`
-  field, before the general frontend delegation. Reverify this in the next cloud
-  build rather than treating a local schema test as sufficient.
+  field, before the general frontend delegation. On deployment `8aaf762`, Welcome,
+  `/login`, `/signup`, agenda/note deep links, all three public policies and hashed
+  assets returned **200**; policies contained their own static HTML and assets
+  retained immutable caching. Backend/API routes remained separate.
 - The startup SMTP diagnostic used a host-specific logger at INFO and was not
   observable in Vercel's runtime logs. Its opt-in, value-free diagnostic now uses
   an application logger at WARNING, regression-tested for both success/failure
@@ -130,13 +145,38 @@
   env entry: the project still has exactly 25 Preview-only app variables and no
   Production app credentials. The token is never a substitute for app auth and
   must stay out of Git, browser assets, command arguments and published links.
+  After validation, this temporary bypass was **revoked without regeneration**;
+  deployment protection remained on. The owner should use ordinary Vercel login
+  to open the review URL, not an automation token.
 - Cloud maintenance checks passed for private reads, Google start, an empty mail
   request and an empty agenda request: all returned **503/no-store**, `Retry-After:
   60`, and no cookie, session, email or app-data write. After these checks, only the
   Preview flags were changed to `SMTP_PROBE_ON_STARTUP=false` and
   `MAINTENANCE_MODE=false`, for the next isolated anonymous validation deployment.
-- Corrected static routes and anonymous OAuth/CSRF still need their remaining
-  cloud acceptance checks. Do not merge or migrate production yet.
+- The final isolated Preview returned **200/no-store** readiness/status with shared
+  PostgreSQL OAuth state and Google configured. Private identity/schedules/notes/
+  password-security requests returned **401/no-store**. Native context was enabled,
+  its cookie was host-only Secure/HttpOnly/Strict, and its CSRF HMAC matched the
+  preserved session secret. General signup and a synthetic missing-CSRF login were
+  rejected **403** before credential checks; no owner password was submitted.
+- Actual OAuth start retained the existing client/callback, identity-only scopes
+  and PKCE S256. Wrong-browser cancellation was rejected without consuming the
+  valid flow; bound cancellation returned 303 and replay returned **400**. No Google
+  token exchange or application session was created. Cross-instance atomicity is
+  covered by isolated two-instance backend tests, not inferred from cloud routing.
+- Ten real-cloud public screenshots were opened: Welcome at desktop/tablet/mobile
+  and mobile Masuk/Buat akun, all in light/dark. No API mocks, browser errors,
+  horizontal overflow, private workspace or API writes were observed. The capture
+  harness waits for native readiness rather than photographing its initial state.
+- All 14 deployed HTML/JS/CSS files were scanned against known local credentials
+  and the private bypass: **zero matches**. The earlier local scan also covered all
+  30 built assets. No screenshots/reports or private env files were committed.
+- A final read-only SHA-256 comparison confirmed **all 17 existing rehearsal tables
+  unchanged** against their post-migration baseline; only the new handshake table
+  was used for the canceled OAuth test. Production was not accessed by that check.
+- Real owner Google/native login, authenticated-save latency, production schema
+  `0003`, custom-domain TLS/cookies and DNS cutover remain **pending later approval**.
+  Keep the original services/database intact; do not merge or migrate production yet.
 - A final read-only check of the unchanged public site returned **200** for Welcome,
   readiness and status; its database was ready and its original in-memory OAuth
   mode remained active. No login, password, mail or application-data writes occurred.
