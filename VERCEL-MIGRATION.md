@@ -55,6 +55,10 @@
 - Six local production-build screenshots were opened at desktop/tablet/mobile in
   light/dark mode. These use mocked public readiness, not real account data or a
   claim that Vercel runtime routing or Google login has already passed.
+- The first committed-source CLI upload dry-run caught directory exclusions before
+  any deploy. Bare directory negations now allow Vercel's walker to descend into
+  both application roots; the revised dry-run contains 121 expected inputs. Verify
+  the final committed export again before deploying, including secret exclusions.
 
 ## Required serverless OAuth change
 

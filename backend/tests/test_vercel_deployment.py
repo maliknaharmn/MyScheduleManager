@@ -51,6 +51,8 @@ def test_vercel_hosts_both_apps_without_proxying_to_previous_hosts():
 def test_vercel_upload_excludes_private_files_containers_and_local_preview():
     ignore = (ROOT / ".vercelignore").read_text().splitlines()
     assert "**" in ignore and "!frontend/**" in ignore and "!backend/**" in ignore
+    # Vercel's recursive walker tests bare directory names before descending.
+    assert "!frontend" in ignore and "!backend" in ignore
     for pattern in (
         "**/.env",
         "**/.env.*",
