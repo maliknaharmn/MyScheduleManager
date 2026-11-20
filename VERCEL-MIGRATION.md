@@ -1,4 +1,52 @@
-# Full-stack Vercel Hobby migration (feature branch only)
+# Full-stack Vercel Hobby migration
+
+## Owner approval update - 2026-11-20
+
+The owner explicitly approved continuation, commit/push and **merging
+`infra/vercel-fullstack-migration` into `main`**. This supersedes the earlier
+"do not merge main" statements below; those remain as the dated preparation
+record. A main push triggers FastAPI Cloud's compatibility deployment. It does
+not switch the Netlify frontend, DNS or database, and must not be mistaken for a
+completed Vercel production cutover.
+
+- The existing production site and direct API returned readiness/status **200**
+  before merge, still using the original in-memory OAuth mode and production
+  schema `0002`. Runtime credentials, mail settings and sessions are preserved.
+- Re-run results on 2026-11-20: **218 backend**, **52 frontend unit**,
+  **162 desktop/mobile E2E with one worker and no retries**, and **4 legal/static**
+  tests passed, along with Ruff/formatting and whitespace checks. The earlier
+  two-worker intermittency is still recorded, not claimed fixed.
+- A stable free preview alias was created in the same project:
+  **https://myschedule-manager-preview-maliknaharmn.vercel.app/**. It points only
+  to an explicitly Preview deployment, never to the empty Production bootstrap.
+  Vercel Authentication was strengthened to **All Deployments** (`all`) before
+  assigning the alias; anonymous access returned **302**. This protection is free
+  on Hobby and does not enable Password Protection or any paid add-on.
+- Only Preview `APP_ORIGIN` and `GOOGLE_REDIRECT_URI` were changed to that stable
+  origin/callback, with a new Preview deployment required to activate them.
+  Existing secrets, limited database-role URLs, owner identity, SMTP transport and
+  disabled startup probe were retained. No Production app variables were added.
+- The owner must **add**, not replace, this exact URI on the existing Google Web
+  OAuth client before testing Google login:
+
+  ```text
+  https://myschedule-manager-preview-maliknaharmn.vercel.app/api/v1/auth/google/callback
+  ```
+
+  Keep `https://myschedule.gwe.web.id/api/v1/auth/google/callback` registered.
+  Do not create a replacement client, rotate its secret or request Calendar scopes.
+  The backend redirect flow does not need a new JavaScript-origin entry.
+- FastAPI Cloud's saved CLI/API authorization currently returns **401**. The
+  app's GitHub check can still report the commit-specific automatic deployment;
+  verify that result and the live site after the main push. Do not overwrite
+  credentials or claim a provider API inspection that did not succeed.
+- Production migration `0003`, Vercel app Production variables/deployment, the
+  `myschedule` Cloudflare record and old-service maintenance remain deferred until
+  the owner's actual preview login/data/save checks and the coordinated cutover.
+  The disposable preview database still expires **2026-11-21**; refresh/extend its
+  lifecycle deliberately if review exceeds that date, never substitute it for
+  production. Before a later public cutover, review the `all` protection scope so
+  the approved production domain does not accidentally require Vercel login.
 
 ## Owner-approved scope - 2026-11-19
 
@@ -25,11 +73,11 @@ automation bypass URL/token. Deployed application source is **`8aaf762`**, deplo
 `dpl_8rADPkaWXy3KgsQKitaYzSjCGtxN`, verified **Preview**. Later documentation-only
 commits do not change those deployed application files.
 
-This is an **anonymous/public-flow review**, not a real owner login/save test.
-The registered Google callback and canonical app origin remain the production
-domain; do not complete Google/native login on the preview or treat it as a final
-production acceptance test. No merge, production app deployment, migration or DNS
-cutover is approved by the empty bootstrap exception.
+This URL is the earlier **anonymous/public-flow review**, not a real owner
+login/save test. Its deployed origin/callback remain bound to production. Use the
+new stable alias and wait for its reconfigured Preview deployment plus Google URI
+registration before testing login. The empty bootstrap exception by itself did
+not authorize an app production cutover; the later merge approval is recorded above.
 
 - Vercel CLI `59.16.0` was browser-authorized. The existing workspace
   `maliknaharmns-projects` is active **Hobby**, with no trial. Unrelated projects
