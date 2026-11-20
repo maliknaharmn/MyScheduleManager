@@ -18,7 +18,6 @@ from myschedule.auth import (
     OAUTH_PATH,
     SESSION_COOKIE,
     GoogleClient,
-    HandshakeStore,
     Identity,
     assert_csrf,
     create_login,
@@ -30,6 +29,7 @@ from myschedule.config import Settings, get_settings
 from myschedule.database import Database
 from myschedule.errors import ApiError, api_error_handler, envelope, validation_error_handler
 from myschedule.models import AppSession, Profile
+from myschedule.oauth_state import MemoryHandshakeBackend, PostgresHandshakeBackend
 from myschedule.password_auth import PasswordService
 from myschedule.password_body_limit import PasswordBodyLimit
 from myschedule.password_mail import PasswordMailer
@@ -53,7 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(app: FastAPI):
         if settings.smtp_probe_on_startup:
             passed, code = await asyncio.to_thread(app.state.password_auth.mailer.probe)
-            logging.getLogger("uvicorn.error").info(
+            # Native serverless hosts may suppress INFO before ASGI startup finishes.
+            # This opt-in, value-free diagnostic must remain observable on those hosts.
+            logging.getLogger("myschedule.runtime_probe").warning(
                 "smtp_startup_probe passed=%s smtp_code=%s mail_sent=False", passed, code
             )
         yield
@@ -72,7 +74,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.database = Database(settings)
-    app.state.handshakes = HandshakeStore()
+    app.state.handshakes = (
+        PostgresHandshakeBackend(app.state.database, settings)
+        if settings.oauth_state_storage == "postgres"
+        else MemoryHandshakeBackend()
+    )
     app.state.google = GoogleClient(settings)
     app.state.password_auth = PasswordService(
         settings, app.state.database, PasswordMailer(settings)
@@ -108,7 +114,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def response_security(request: Request, call_next):
         started = perf_counter()
         request.state.request_id = secrets.token_hex(12)
-        response = await call_next(request)
+        if settings.maintenance_mode and request.url.path not in {"/health/live", "/health/ready"}:
+            response = await api_error_handler(
+                request,
+                ApiError(
+                    503, "SERVICE_MAINTENANCE", "Layanan sedang dipindahkan. Coba lagi sebentar."
+                ),
+            )
+            response.headers["Retry-After"] = "60"
+        else:
+            response = await call_next(request)
         # Total application latency only: no SQL, identities, tokens or parameters.
         response.headers["Server-Timing"] = f"app;dur={(perf_counter() - started) * 1000:.1f}"
         response.headers["X-Request-ID"] = request.state.request_id
@@ -148,7 +163,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "google_login_configured": settings.google_login_configured,
                 "calendar_integration": "not_implemented",
                 "capabilities": {"schedules": True, "notes": True, "calendar_reminders": False},
-                "auth_handshake_storage": "single_process_memory",
+                "auth_handshake_storage": (
+                    "postgres"
+                    if settings.oauth_state_storage == "postgres"
+                    else "single_process_memory"
+                ),
             },
         )
 
@@ -159,7 +178,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise ApiError(
                 503, "GOOGLE_NOT_CONFIGURED", "Login Google belum dikonfigurasi di server."
             )
-        handshake = app.state.handshakes.create(return_to)
+        handshake = await app.state.handshakes.create(return_to)
         url = await app.state.google.authorization_url(handshake)
         response = RedirectResponse(url, status_code=303)
         response.set_cookie(
@@ -180,7 +199,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         code: str = Query("", max_length=4096),
         error: str | None = Query(None, max_length=200),
     ):
-        handshake = app.state.handshakes.consume(state, request.cookies.get(OAUTH_COOKIE, ""))
+        handshake = await app.state.handshakes.consume(state, request.cookies.get(OAUTH_COOKIE, ""))
         if error or not code:
             response = RedirectResponse(f"{settings.app_origin}/login?error=google_cancelled", 303)
         else:

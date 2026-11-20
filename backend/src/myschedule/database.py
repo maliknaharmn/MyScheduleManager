@@ -17,6 +17,7 @@ class Database:
         pool_options = {
             "pool_size": settings.database_pool_size,
             "max_overflow": settings.database_pool_max_overflow,
+            "ssl_ca_pem": settings.database_ssl_ca_pem.get_secret_value() or None,
         }
         self.engine = (
             postgres_engine(settings.database_url.get_secret_value(), **pool_options)
@@ -76,6 +77,10 @@ class Database:
                     if auth:
                         await session.execute(text("SELECT id FROM users LIMIT 0"))
                         await session.execute(text("SELECT id FROM sessions LIMIT 0"))
+                        if self.settings.oauth_state_storage == "postgres":
+                            await session.execute(
+                                text("SELECT state_hash FROM app_private.oauth_handshakes LIMIT 0")
+                            )
                         if self.settings.password_auth_enabled:
                             for table in (
                                 "password_credentials",
@@ -89,9 +94,11 @@ class Database:
                         revision = await session.scalar(
                             text("SELECT version_num FROM alembic_version")
                         )
-                        if revision not in {"0001", "0002"}:
+                        if revision not in {"0001", "0002", "0003"}:
                             return False
-                        if self.settings.password_auth_enabled and revision != "0002":
+                        if self.settings.password_auth_enabled and revision not in {"0002", "0003"}:
+                            return False
+                        if self.settings.oauth_state_storage == "postgres" and revision != "0003":
                             return False
                         await session.execute(text("SELECT id FROM schedules LIMIT 0"))
                     return True

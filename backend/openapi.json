@@ -5541,7 +5541,10 @@
           },
           "auth_handshake_storage": {
             "type": "string",
-            "const": "single_process_memory",
+            "enum": [
+              "single_process_memory",
+              "postgres"
+            ],
             "title": "Auth Handshake Storage"
           }
         },

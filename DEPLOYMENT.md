@@ -1,5 +1,16 @@
 # Netlify frontend + FastAPI Cloud backend
 
+The approved target is now **full-stack Vercel Hobby (React/Vite + FastAPI), with
+the existing Neon Singapore database**. Work is isolated on
+`infra/vercel-fullstack-migration`: no `main` merge/push or production cutover before
+owner review/approval. See [VERCEL-MIGRATION.md](VERCEL-MIGRATION.md) for current
+evidence and guardrails. Production remains Netlify + FastAPI Cloud + Neon for now.
+
+**2026-11-20:** the owner approved merging the reviewed migration branch into
+`main`. This permits FastAPI Cloud's compatibility auto-deploy, not an immediate
+Vercel domain/database cutover. The stable preview callback and remaining owner
+login checks are recorded at the top of [VERCEL-MIGRATION.md](VERCEL-MIGRATION.md).
+
 Production frontend domain: **https://myschedule.gwe.web.id**.
 Dashboard: https://app.netlify.com/projects/myschedulemanager.
 Created via authenticated CLI; Git continuous deployment is not connected yet.

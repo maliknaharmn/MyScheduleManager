@@ -62,7 +62,8 @@ test('ordinary agenda needs only a title, saves once, and opens cached detail wi
   await save.click()
   await expect(page.getByRole('button', { name: 'Menyimpan…' })).toBeDisabled()
   await expect(page.getByLabel('Judul agenda')).toBeDisabled()
-  expect(state.saves).toHaveLength(1)
+  // The pending UI can render before the browser delivers the intercepted POST.
+  await expect.poll(() => state.saves.length).toBe(1)
   release()
   await expect(page.getByRole('heading', { name: 'Rapat singkat' })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('Agenda tersimpan')

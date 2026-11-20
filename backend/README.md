@@ -121,6 +121,55 @@ direct yang terpisah. Jangan mengirim URL migrasi/test ke lingkungan runtime clo
 Rollback kode memakai backend kompatibel dengan native off, bukan menghapus tabel
 kredensial atau mengembalikan schema ke `0001`.
 
+## Persiapan Vercel full-stack (branch saja, belum cutover)
+
+Target aktif adalah frontend Vite dan API FastAPI pada satu project Vercel Hobby,
+dengan PostgreSQL tetap di Neon Singapore. Root `vercel.json` mengatur native
+Python `backend/app.py`, frontend statis, region `sin1`, API/health sebelum fallback
+SPA, dan manual deployment. `.vercelignore` mengecualikan rahasia, migrasi, test,
+virtualenv, Dockerfile dan kode local-preview dari upload.
+
+`OAUTH_STATE_STORAGE=postgres` wajib untuk entrypoint Vercel. Migrasi additive
+`0003` hanya menambah handshake OAuth privat yang terenkripsi, terikat browser,
+kedaluwarsa dan dikonsumsi atomik sekali pakai. Source lama tetap memakai memory
+selama compatibility rollout dan menerima revisi `0003` setelah kode kompatibel
+terpasang. Jangan menjalankan migrasi otomatis pada startup API atau mengubah hash
+password/sesi/user ID untuk migrasi hosting.
+
+Semua commit/push dan preview tetap di `infra/vercel-fullstack-migration`; merge
+`main`, migrasi produksi dan perubahan DNS menunggu review/persetujuan pemilik.
+Detail status dan urutannya ada di [VERCEL-MIGRATION.md](../VERCEL-MIGRATION.md).
+
+### Dukungan container/transport dari persiapan hosting sebelumnya
+
+Gunakan `Dockerfile` dari direktori backend dan entrypoint
+`python -m myschedule.serve`. Runtime mengikuti `PORT`, memakai satu worker dan
+tidak mencetak access log OAuth. File privat/local-preview tidak termasuk build.
+Build container lokal belum diverifikasi karena Docker tidak tersedia.
+
+Render Free juga memblokir SMTP. Pilih `MAIL_TRANSPORT=brevo_api`, pasang
+`BREVO_API_KEY` sebagai secret backend, dan pertahankan alamat/nama pengirim yang
+sudah diverifikasi. Ini bukan SMTP password. Mode `smtp` tetap default untuk
+hosting lama; `SMTP_PROBE_ON_STARTUP` harus false pada mode HTTPS. Pengiriman HTTPS
+tidak mengikuti redirect, retry otomatis atau fallback SMTP, dan tidak mencetak
+key, isi email, tautan maupun teks error provider.
+
+Untuk PostgreSQL privat dengan CA sendiri, isi `DATABASE_SSL_CA_PEM` dengan
+sertifikat CA PEM dan gunakan `sslmode=verify-full`. Role app/auth tetap terbatas;
+jangan gunakan URL admin sebagai koneksi runtime. `MAINTENANCE_MODE=true` menolak
+request non-health sebelum ada login, email atau perubahan data dan diperlukan
+untuk jeda cutover yang konsisten. Default-nya false.
+
+Rencana Render sebelumnya hanya memindahkan API; rencana itu sudah digantikan
+Vercel dan tidak boleh dijalankan. Root `render.yaml` historis mengunci plan
+`free`, satu instance, manual deploy, tanpa database/disk/preview tambahan, dan
+maintenance awal aktif. Jangan menghilangkan plan karena default Render berbayar.
+Jangan memasang CA privat untuk koneksi Neon yang tetap memakai public trust.
+
+Belum ada pergantian produksi. [RENDER-MIGRATION.md](../RENDER-MIGRATION.md) dan
+rencana Railway disimpan sebagai riwayat, bukan lagi rencana eksekusi. Gunakan
+[VERCEL-MIGRATION.md](../VERCEL-MIGRATION.md) untuk preview dan persetujuan cutover.
+
 ## Tes dan kontrak
 
 ```sh

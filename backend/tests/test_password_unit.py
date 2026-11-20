@@ -126,8 +126,10 @@ def test_smtp_port_parses_from_real_environment_strings(monkeypatch, port):
     [
         ("0001", False, True),
         ("0002", False, True),
+        ("0003", False, True),
         ("0001", True, False),
         ("0002", True, True),
+        ("0003", True, True),
         ("future-unreviewed", False, False),
     ],
 )

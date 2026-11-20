@@ -50,7 +50,7 @@ class StatusData(StrictModel):
     google_login_configured: bool
     calendar_integration: Literal["not_implemented"]
     capabilities: Capabilities
-    auth_handshake_storage: Literal["single_process_memory"]
+    auth_handshake_storage: Literal["single_process_memory", "postgres"]
 
 
 class PublicUser(StrictModel):
